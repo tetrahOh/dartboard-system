@@ -3,24 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Oche — Dart Scoring</title>
+<title>DigiDarts — Camera-Ready Dart Scoring</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div id="setup">
   <div class="brand">
-    <div class="mark">Oche</div>
-    <div class="sub">camera-ready dart scoring</div>
+    <div class="mark">DigiDarts</div>
+    <div class="sub">grab a dart, pick a game, go 🎯</div>
   </div>
 
   <div class="card">
-    <h2>Game</h2>
-    <div class="choice-row" id="game-type-choices">
-      <div class="choice active" data-value="x01_501">501</div>
-      <div class="choice" data-value="x01_301">301</div>
-      <div class="choice" data-value="x01_701">701</div>
-      <div class="choice" data-value="cricket">Cricket</div>
+    <h2>Game mode</h2>
+    <div class="mode-grid" id="mode-grid">
+      <div class="mode-card active" data-mode="x01" data-score="501">
+        <div class="mode-name">501</div>
+        <div class="mode-desc">Classic countdown. First to zero, checkout on a double.</div>
+      </div>
+      <div class="mode-card" data-mode="x01" data-score="301">
+        <div class="mode-name">301</div>
+        <div class="mode-desc">Faster countdown version of X01.</div>
+      </div>
+      <div class="mode-card" data-mode="x01" data-score="701">
+        <div class="mode-name">701</div>
+        <div class="mode-desc">Longer countdown version of X01.</div>
+      </div>
+      <div class="mode-card" data-mode="cricket">
+        <div class="mode-name">Cricket</div>
+        <div class="mode-desc">Close 15-20 &amp; Bull before your rivals, score while they're open.</div>
+      </div>
+      <div class="mode-card" data-mode="around_the_clock">
+        <div class="mode-name">Around the Clock</div>
+        <div class="mode-desc">Hit 1 through 20, then Bull, in order. First there wins.</div>
+      </div>
+      <div class="mode-card" data-mode="killer">
+        <div class="mode-name">Killer</div>
+        <div class="mode-desc">Double your own number to go killer, then hunt everyone else's.</div>
+      </div>
+      <div class="mode-card" data-mode="shanghai">
+        <div class="mode-name">Shanghai</div>
+        <div class="mode-desc">20 rounds, one number each. S+D+T of the round's number = instant win.</div>
+      </div>
+      <div class="mode-card" data-mode="halve_it">
+        <div class="mode-name">Halve It</div>
+        <div class="mode-desc">Hit the round's target or watch your score get cut in half.</div>
+      </div>
+      <div class="mode-card" data-mode="limit">
+        <div class="mode-name">Limit</div>
+        <div class="mode-desc">A rotating setter sets the bar. Miss it, lose a life. 3 lives each.</div>
+      </div>
     </div>
   </div>
 
@@ -32,13 +64,7 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>Players</h2>
-    <div class="player-list" id="player-list"></div>
-    <button class="link-btn" id="add-player">+ Add player</button>
-  </div>
-
-  <div class="card">
+  <div class="card" id="legs-card">
     <h2>Legs to win</h2>
     <div class="choice-row" id="legs-choices">
       <div class="choice active" data-legs="1">1</div>
@@ -47,10 +73,46 @@
     </div>
   </div>
 
+  <div class="card hidden" id="lives-card">
+    <h2>Lives per player</h2>
+    <div class="choice-row" id="lives-choices">
+      <div class="choice" data-lives="1">1</div>
+      <div class="choice active" data-lives="3">3</div>
+      <div class="choice" data-lives="5">5</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Players (1-10)</h2>
+    <div class="player-list" id="player-list"></div>
+    <button class="link-btn" id="add-player">+ Add player</button>
+    <div class="player-count-note" id="player-count-note"></div>
+  </div>
+
+  <div class="card">
+    <h2>Teams</h2>
+    <div class="choice-row">
+      <div class="choice active" id="teams-off" data-teams="false">Free-for-all</div>
+      <div class="choice" id="teams-on" data-teams="true">Team play</div>
+    </div>
+    <div id="teams-panel" class="hidden">
+      <div class="teams-toolbar">
+        <button type="button" id="add-team">+ Add team</button>
+        <button type="button" class="shuffle" id="shuffle-teams">🔀 Shuffle players</button>
+      </div>
+      <div class="player-count-note">Tap a team chip on each player above to assign them.</div>
+    </div>
+  </div>
+
   <button class="primary-btn" id="start-btn">Start game</button>
 </div>
 
 <div id="game" class="hidden">
+  <div class="game-topbar">
+    <div class="brand-mini">DigiDarts</div>
+  </div>
+  <div class="round-banner hidden" id="round-banner"></div>
+
   <div id="winner-banner" class="winner-banner hidden">
     <div class="title" id="winner-text"></div>
     <button class="primary-btn" id="new-game-btn">New game</button>
@@ -65,6 +127,7 @@
       <div class="pip" id="pip-2">—</div>
     </div>
     <div class="checkout-hint" id="checkout-hint"></div>
+    <div class="limit-hint" id="limit-hint"></div>
   </div>
 
   <div class="board-wrap">

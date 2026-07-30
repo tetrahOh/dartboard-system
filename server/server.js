@@ -26,12 +26,14 @@ function broadcast(gameId) {
 
 // Create a new game
 app.post('/api/game', (req, res) => {
-  const { type, startScore, doubleOut, players, legsToWin } = req.body;
+  const { type, startScore, doubleOut, players, legsToWin, teams, livesStart } = req.body;
   const game = new Game({
     type: type || 'x01',
     startScore: startScore || 501,
     doubleOut: doubleOut !== false,
     legsToWin: legsToWin || 1,
+    livesStart: livesStart || 3,
+    teams: teams && teams.length ? teams : null,
     players: players && players.length ? players : [{ id: 'p1', name: 'Player 1' }, { id: 'p2', name: 'Player 2' }],
   });
   games.set(game.id, game);

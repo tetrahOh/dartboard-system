@@ -132,12 +132,29 @@ computer running the server), open:
 http://<computer's-local-ip>:8080
 ```
 
-You'll land on a setup screen: pick 501 / 301 / 701 / Cricket, add players,
-choose double-out or straight-out and best-of-N legs, then start. The
-clickable dartboard mirrors real board geometry (singles, doubles, triples,
-bullseye), and every score updates all connected devices live over
-WebSocket — so a tablet on the wall can display the scoreboard while a
-phone (or the camera bridge script) reports the throws.
+You'll land on the **DigiDarts** setup screen: pick a game mode, add 1-10
+players (optionally split into teams), then start. The clickable dartboard
+mirrors real board geometry (singles, doubles, triples, bullseye), and every
+score updates all connected devices live over WebSocket — so a tablet on the
+wall can display the scoreboard while a phone (or the camera bridge script)
+reports the throws.
+
+### Game modes
+
+| Mode | Rules |
+|---|---|
+| 501 / 301 / 701 | Classic countdown, double-out or straight-out, best-of-N legs. |
+| Cricket | Close 15-20 and Bull before your rivals; score on numbers still open. |
+| Around the Clock | Hit 1 through 20, then Bull, in order. First there wins. |
+| Killer | Double your own (randomly assigned) number to go "killer," then hit opponents' numbers to take their lives. Last one standing wins. |
+| Shanghai | 20 rounds, one target number each (round *n* targets the number *n*). Hitting single+double+triple of the round's number in one turn is an instant win; otherwise highest total after 20 rounds wins. |
+| Halve It | Each round has a required target; miss it entirely on your turn and your running score is cut in half. |
+| Limit | A rotating "setter" throws first each round and sets the limit (which can only ratchet **down**); everyone else must meet or beat it or lose a life. 3 lives by default, last one standing wins. |
+
+**Teams**: any mode can be played as Team A vs Team B (vs C, D...) — turn
+order alternates between teams' members, but score/lives/marks are shared
+per team. Assign players to teams with the chips on the setup screen, or hit
+**Shuffle players** to redistribute randomly.
 
 ### Hosting it publicly (optional)
 
@@ -158,6 +175,10 @@ about the free tier before you rely on it for game night:
 
 ```
 POST /api/game                     create a game
+                                    { "type": "x01"|"cricket"|"around_the_clock"|"killer"|"shanghai"|"halve_it"|"limit",
+                                      "startScore", "doubleOut", "legsToWin", "livesStart",
+                                      "players": [{"id","name","teamId"?}],
+                                      "teams"?: [{"id","name"}] }
 GET  /api/game/:id                 current state
 POST /api/game/:id/throw           { "segment": 20 | "BULL" | "MISS", "multiplier": 1|2|3 }
 POST /api/game/:id/undo            undo last dart / turn
@@ -165,7 +186,7 @@ POST /api/game/:id/undo            undo last dart / turn
 
 This is the only integration point that matters — anything that can POST
 JSON (Autodarts bridge, your own OpenCV script, or even a phone app) can
-drive the scoreboard.
+drive the scoreboard, regardless of which game mode is active.
 
 ## What's included in this project
 
