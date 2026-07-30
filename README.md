@@ -139,6 +139,21 @@ bullseye), and every score updates all connected devices live over
 WebSocket — so a tablet on the wall can display the scoreboard while a
 phone (or the camera bridge script) reports the throws.
 
+### Hosting it publicly (optional)
+
+`render.yaml` in the repo root is a [Render](https://render.com) Blueprint —
+Render's free web-service tier runs Node + WebSocket apps with no credit
+card required. To deploy: sign in to Render with GitHub, click **New +** →
+**Blueprint**, pick this repo, and accept the defaults. Two things to know
+about the free tier before you rely on it for game night:
+
+- The service **sleeps after ~15 minutes idle** and takes ~30-60s to wake on
+  the next request — fine for casual use, annoying mid-leg.
+- Game state is **in-memory only**, so a sleep/restart wipes any game in
+  progress. Game IDs are random (not sequential) specifically so a public
+  URL can't be walked by guessing `/api/game/1`, `/api/game/2`, etc. — but
+  there's still no login, so anyone with a game's URL can throw/undo on it.
+
 ### The API your camera script talks to
 
 ```

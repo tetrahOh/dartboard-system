@@ -1,9 +1,9 @@
 // gameEngine.js
 // Pure game-state logic. No I/O here — server.js wraps this and broadcasts state.
 
-const CRICKET_NUMBERS = [20, 19, 18, 17, 16, 15, 'BULL'];
+const crypto = require('crypto');
 
-let gameCounter = 1;
+const CRICKET_NUMBERS = [20, 19, 18, 17, 16, 15, 'BULL'];
 
 function scoreValue(segment, multiplier) {
   if (segment === 'BULL') return multiplier === 2 ? 50 : 25; // inner bull = 2x outer
@@ -20,7 +20,7 @@ function label(segment, multiplier) {
 
 class Game {
   constructor({ type = 'x01', startScore = 501, doubleOut = true, players, legsToWin = 1 }) {
-    this.id = String(gameCounter++);
+    this.id = crypto.randomBytes(4).toString('hex'); // unguessable — this ID doubles as the only access control
     this.type = type; // 'x01' | 'cricket'
     this.startScore = startScore;
     this.doubleOut = doubleOut;
@@ -184,9 +184,6 @@ class Game {
     if (!this.doubleOut) return null;
     const doubles = [...Array(20)].map((_, i) => 2 * (i + 1)).concat([50]);
     if (doubles.includes(score)) return [label(score === 50 ? 'BULL' : score / 2, score === 50 ? 2 : 2)];
-    for (let t1 = 60; t1 >= 0; t1 -= 1) {
-      // try single dart + double combos up to 3 darts (simple greedy search)
-    }
     // simple table for common checkouts, falls back to null for exotic ones
     const table = {
       170: ['T20', 'T20', 'DB'], 167: ['T20', 'T19', 'DB'], 164: ['T20', 'T18', 'DB'],
