@@ -1,0 +1,13 @@
+{
+  "name": "dart-scoring-server",
+  "version": "1.0.0",
+  "description": "Custom web app + API for camera-based dart scoring",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  }
+}

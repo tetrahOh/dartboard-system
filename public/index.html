@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Oche — Dart Scoring</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="setup">
+  <div class="brand">
+    <div class="mark">Oche</div>
+    <div class="sub">camera-ready dart scoring</div>
+  </div>
+
+  <div class="card">
+    <h2>Game</h2>
+    <div class="choice-row" id="game-type-choices">
+      <div class="choice active" data-value="x01_501">501</div>
+      <div class="choice" data-value="x01_301">301</div>
+      <div class="choice" data-value="x01_701">701</div>
+      <div class="choice" data-value="cricket">Cricket</div>
+    </div>
+  </div>
+
+  <div class="card" id="x01-options">
+    <h2>Finish</h2>
+    <div class="choice-row">
+      <div class="choice active" data-double="true">Double out</div>
+      <div class="choice" data-double="false">Straight out</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Players</h2>
+    <div class="player-list" id="player-list"></div>
+    <button class="link-btn" id="add-player">+ Add player</button>
+  </div>
+
+  <div class="card">
+    <h2>Legs to win</h2>
+    <div class="choice-row" id="legs-choices">
+      <div class="choice active" data-legs="1">1</div>
+      <div class="choice" data-legs="3">Best of 3</div>
+      <div class="choice" data-legs="5">Best of 5</div>
+    </div>
+  </div>
+
+  <button class="primary-btn" id="start-btn">Start game</button>
+</div>
+
+<div id="game" class="hidden">
+  <div id="winner-banner" class="winner-banner hidden">
+    <div class="title" id="winner-text"></div>
+    <button class="primary-btn" id="new-game-btn">New game</button>
+  </div>
+
+  <div class="scoreboard" id="scoreboard"></div>
+
+  <div class="turn-strip">
+    <div class="dart-pips" id="dart-pips">
+      <div class="pip" id="pip-0">—</div>
+      <div class="pip" id="pip-1">—</div>
+      <div class="pip" id="pip-2">—</div>
+    </div>
+    <div class="checkout-hint" id="checkout-hint"></div>
+  </div>
+
+  <div class="board-wrap">
+    <svg id="board-svg" viewBox="0 0 800 800"></svg>
+  </div>
+
+  <div class="controls-row">
+    <button id="miss-btn">Miss</button>
+    <button id="undo-btn">Undo</button>
+    <button id="end-game-btn">End game</button>
+  </div>
+
+  <div class="log-panel" id="log-panel"></div>
+</div>
+
+<script src="board.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
