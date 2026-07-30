@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const os = require('os');
 const { WebSocketServer } = require('ws');
 const path = require('path');
 const { Game } = require('./gameEngine');
@@ -77,8 +78,25 @@ wss.on('connection', (ws) => {
   });
 });
 
+function lanAddresses() {
+  const nets = os.networkInterfaces();
+  const addrs = [];
+  for (const iface of Object.values(nets)) {
+    for (const net of iface || []) {
+      if (net.family === 'IPv4' && !net.internal) addrs.push(net.address);
+    }
+  }
+  return addrs;
+}
+
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Dart scoring server running on http://0.0.0.0:${PORT}`);
-  console.log(`Open this address from your tablet/phone browser on the same network.`);
+  console.log(`Dart scoring server running on port ${PORT}`);
+  console.log('Open one of these from your tablet/phone browser on the same WiFi:');
+  const addrs = lanAddresses();
+  if (addrs.length) {
+    addrs.forEach((ip) => console.log(`  http://${ip}:${PORT}`));
+  } else {
+    console.log('  (no LAN network detected — connect to WiFi/ethernet and restart)');
+  }
 });

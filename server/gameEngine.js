@@ -60,15 +60,15 @@ class Game {
     this.winnerName = null;
     this.log = [];
 
-    this.players = players.map((p) => this._makeCompetitor(p.id, p.name, p.teamId || null));
+    this.players = players.map((p) => this._makeCompetitor(p.id, p.name, p.teamId || null, false, p.avatar));
     this.teams = teams && teams.length ? teams.map((t) => this._makeCompetitor(t.id, t.name, null, true)) : null;
 
     if (type === 'killer') this._assignKillerNumbers();
   }
 
-  _makeCompetitor(id, name, teamId, isTeam = false) {
+  _makeCompetitor(id, name, teamId, isTeam = false, avatar) {
     return {
-      id, name, teamId, isTeam,
+      id, name, teamId, isTeam, avatar: avatar || null,
       history: isTeam ? undefined : [],
       score: this.type === 'x01' ? this.startScore : 0,
       legsWon: 0,
@@ -443,6 +443,7 @@ class Game {
       name: c.name,
       teamId: c.teamId,
       isTeam: c.isTeam,
+      avatar: c.avatar,
       score: c.score,
       legsWon: c.legsWon,
       marks: c.marks,
@@ -452,6 +453,7 @@ class Game {
       eliminated: c.eliminated,
       target: c.targetIndex !== undefined ? AROUND_THE_CLOCK_SEQUENCE[Math.min(c.targetIndex, AROUND_THE_CLOCK_SEQUENCE.length - 1)] : undefined,
       memberNames: c.isTeam ? this.players.filter((p) => p.teamId === c.id).map((p) => p.name) : undefined,
+      memberAvatars: c.isTeam ? this.players.filter((p) => p.teamId === c.id).map((p) => p.avatar) : undefined,
       history: c.isTeam ? undefined : c.history.map((h) => ({ throws: h.throws, total: h.total, bust: h.bust })),
     };
   }

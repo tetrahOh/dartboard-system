@@ -12,12 +12,14 @@
   let nextTeamNum = 1;
   const MAX_PLAYERS = 10;
   const TEAM_COLORS = ['#ff3ea8', '#2fe8ff', '#c6ff5a', '#ff8a3d', '#8b5cf6', '#ffd23f'];
+  const AVATARS = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐸', '🐵', '🐔', '🐧', '🦄', '🐙', '🐢'];
 
   let players = [
-    { id: 'p1', name: 'Player 1', teamId: null },
-    { id: 'p2', name: 'Player 2', teamId: null },
+    { id: 'p1', name: 'Player 1', teamId: null, avatar: AVATARS[0] },
+    { id: 'p2', name: 'Player 2', teamId: null, avatar: AVATARS[1] },
   ];
   let teams = [];
+  let avatarPickerOpenFor = null;
 
   const LEGS_MODES = new Set(['x01', 'cricket']);
   const LIVES_MODES = new Set(['killer', 'limit']);
@@ -29,8 +31,22 @@
   function renderPlayerRows() {
     playerList.innerHTML = '';
     players.forEach((p, i) => {
+      if (!p.avatar) p.avatar = AVATARS[i % AVATARS.length];
+
       const row = document.createElement('div');
       row.className = 'player-row';
+
+      const avatarBtn = document.createElement('button');
+      avatarBtn.type = 'button';
+      avatarBtn.className = 'avatar-btn';
+      avatarBtn.textContent = p.avatar;
+      avatarBtn.setAttribute('aria-label', 'Choose avatar');
+      avatarBtn.addEventListener('click', () => {
+        avatarPickerOpenFor = avatarPickerOpenFor === p.id ? null : p.id;
+        renderPlayerRows();
+      });
+      row.appendChild(avatarBtn);
+
       const input = document.createElement('input');
       input.type = 'text';
       input.value = p.name;
@@ -62,6 +78,24 @@
         row.appendChild(removeBtn);
       }
       playerList.appendChild(row);
+
+      if (avatarPickerOpenFor === p.id) {
+        const picker = document.createElement('div');
+        picker.className = 'avatar-picker';
+        AVATARS.forEach((a) => {
+          const opt = document.createElement('button');
+          opt.type = 'button';
+          opt.className = 'avatar-option' + (a === p.avatar ? ' active' : '');
+          opt.textContent = a;
+          opt.addEventListener('click', () => {
+            p.avatar = a;
+            avatarPickerOpenFor = null;
+            renderPlayerRows();
+          });
+          picker.appendChild(opt);
+        });
+        playerList.appendChild(picker);
+      }
     });
     playerCountNote.textContent = `${players.length}/${MAX_PLAYERS} players`;
     document.getElementById('add-player').classList.toggle('hidden', players.length >= MAX_PLAYERS);
@@ -75,7 +109,7 @@
       const counts = teams.map((t) => players.filter((p) => p.teamId === t.id).length);
       teamId = teams[counts.indexOf(Math.min(...counts))].id;
     }
-    players.push({ id: `p${Date.now()}${players.length}`, name: `Player ${players.length + 1}`, teamId });
+    players.push({ id: `p${Date.now()}${players.length}`, name: `Player ${players.length + 1}`, teamId, avatar: AVATARS[players.length % AVATARS.length] });
     renderPlayerRows();
   });
 
@@ -159,7 +193,7 @@
 
   // ---------- Start game ----------
   document.getElementById('start-btn').addEventListener('click', async () => {
-    let payloadPlayers = players.map((p) => ({ id: p.id, name: p.name.trim() || 'Player', teamId: teamsEnabled ? p.teamId : undefined }));
+    let payloadPlayers = players.map((p) => ({ id: p.id, name: p.name.trim() || 'Player', teamId: teamsEnabled ? p.teamId : undefined, avatar: p.avatar }));
 
     if (teamsEnabled && teams.length) {
       // interleave players by team, round-robin, so turns alternate fairly across teams
@@ -258,13 +292,18 @@
 
     competitors.forEach((c) => {
       const card = document.createElement('div');
+      card.dataset.id = c.id;
       const isTurn = c.id === state.currentCompetitorId && state.status === 'in_progress';
       card.className = 'player-card' + (isTurn ? ' turn' : '') + (c.eliminated ? ' eliminated' : '');
+      const avatar = c.isTeam
+        ? `<div class="avatar-display team-avatars">${(c.memberAvatars || []).map((a) => a || '🎯').join('')}</div>`
+        : `<div class="avatar-display">${c.avatar || '🎯'}</div>`;
       const members = c.isTeam && c.memberNames ? `<div class="members">${c.memberNames.join(' · ')}</div>` : '';
       const legsPips = LEGS_MODES.has(state.type) && state.legsToWin > 1
         ? `<div class="legs">${'●'.repeat(c.legsWon)}${'○'.repeat(Math.max(0, state.legsToWin - c.legsWon))}</div>` : '';
       const livesBadge = (state.type === 'killer' || state.type === 'limit') ? `<span class="badge lives">${c.lives} ♥</span>` : '';
-      card.innerHTML = `<div class="name">${c.name}</div>
+      card.innerHTML = `${avatar}
+                         <div class="name">${c.name}</div>
                          ${members}
                          <div class="score">${competitorStat(state, c)}</div>
                          ${legsPips}
@@ -305,6 +344,74 @@
       winnerBanner.classList.remove('hidden');
     } else {
       winnerBanner.classList.add('hidden');
+    }
+
+    triggerFlavorAnimations(state);
+  }
+
+  // ---------- Flavor animations ----------
+  let lastSeenLog = null;
+
+  function resolveCardIdFromLog(state, logLine) {
+    const competitors = state.teams && state.teams.length ? state.teams : state.players;
+    const directHit = competitors.find((c) => logLine.startsWith(c.name));
+    if (directHit) return directHit.id;
+    const player = state.players.find((p) => logLine.startsWith(p.name));
+    if (!player) return null;
+    if (state.teams && state.teams.length) {
+      const team = state.teams.find((t) => t.id === player.teamId);
+      return team ? team.id : null;
+    }
+    return player.id;
+  }
+
+  function flashCard(card, cls, ms) {
+    if (!card) return;
+    card.classList.remove(cls);
+    void card.offsetWidth; // restart animation if the class is re-applied quickly
+    card.classList.add(cls);
+    setTimeout(() => card.classList.remove(cls), ms);
+  }
+
+  function spawnConfetti() {
+    const colors = ['#ff3ea8', '#2fe8ff', '#c6ff5a', '#ff8a3d', '#8b5cf6', '#ffd23f'];
+    for (let i = 0; i < 28; i += 1) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = `${Math.random() * 100}vw`;
+      piece.style.background = colors[i % colors.length];
+      piece.style.animationDelay = `${Math.random() * 0.3}s`;
+      piece.style.setProperty('--drift', `${(Math.random() - 0.5) * 220}px`);
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 1900);
+    }
+  }
+
+  function triggerFlavorAnimations(state) {
+    const latest = state.log[0];
+    if (!latest || latest === lastSeenLog) { lastSeenLog = latest; return; }
+    lastSeenLog = latest;
+
+    const id = resolveCardIdFromLog(state, latest);
+    const card = id ? document.querySelector(`.player-card[data-id="${CSS.escape(id)}"]`) : null;
+
+    if (latest.startsWith('Undo:')) {
+      flashCard(card, 'anim-undo', 300);
+    } else if (latest.includes('— BUST')) {
+      flashCard(card, 'anim-bust', 500);
+    } else if (latest.includes('becomes a KILLER')) {
+      flashCard(card, 'anim-killer', 1400);
+    } else if (latest.includes('is eliminated')) {
+      flashCard(card, 'anim-eliminated', 900);
+    } else if (latest.includes('loses a life')) {
+      flashCard(card, 'anim-heartbreak', 500);
+    } else if (latest.includes('score halved')) {
+      flashCard(card, 'anim-halve', 500);
+    } else if (latest.includes('wins') || latest.includes('SHANGHAI') || latest.includes('last one standing')) {
+      flashCard(card, 'anim-win-pulse', 1200);
+      spawnConfetti();
+    } else if (card) {
+      flashCard(card, 'anim-hit', 350);
     }
   }
 
