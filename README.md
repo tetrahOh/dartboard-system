@@ -156,6 +156,15 @@ order alternates between teams' members, but score/lives/marks are shared
 per team. Assign players to teams with the chips on the setup screen, or hit
 **Shuffle players** to redistribute randomly.
 
+### Running it portably on a dedicated mini PC
+
+If the plan is "plug the mini PC into power, connect WiFi, and it just
+works" (e.g. an OptiPlex/N95-class mini PC sitting next to the board), see
+[`deploy/windows/README.md`](deploy/windows/README.md) — auto-start on boot,
+a kiosk-mode browser if the mini PC drives its own display, and
+`digidarts.local` name resolution so tablets never need to know an IP. No
+cloud hosting involved; everything stays on the local network.
+
 ### Hosting it publicly (optional)
 
 `render.yaml` in the repo root is a [Render](https://render.com) Blueprint —
