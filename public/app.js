@@ -33,10 +33,11 @@
     return avatar || fallback || '🎯';
   }
 
-  // Center-crops to a square and downsizes before encoding, since the full
-  // game state (including every player's avatar) gets rebroadcast over the
-  // WebSocket on every single dart thrown - an uncompressed photo there
-  // would multiply that traffic a lot for no visible benefit at avatar size.
+  // Fits the whole photo into a square canvas (letterboxed, not cropped) and
+  // downsizes before encoding, since the full game state (including every
+  // player's avatar) gets rebroadcast over the WebSocket on every single
+  // dart thrown - an uncompressed photo there would multiply that traffic
+  // a lot for no visible benefit at avatar size.
   function resizeToAvatarPhoto(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -46,13 +47,16 @@
         img.onerror = () => reject(new Error('invalid image'));
         img.onload = () => {
           const size = 160;
-          const side = Math.min(img.width, img.height);
-          const sx = (img.width - side) / 2;
-          const sy = (img.height - side) / 2;
+          const scale = Math.min(size / img.width, size / img.height);
+          const drawW = img.width * scale;
+          const drawH = img.height * scale;
           const canvas = document.createElement('canvas');
           canvas.width = size;
           canvas.height = size;
-          canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, size, size);
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, size, size);
+          ctx.drawImage(img, 0, 0, img.width, img.height, (size - drawW) / 2, (size - drawH) / 2, drawW, drawH);
           resolve(canvas.toDataURL('image/jpeg', 0.82));
         };
         img.src = reader.result;
