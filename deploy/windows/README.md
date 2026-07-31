@@ -61,3 +61,45 @@ Test immediately without rebooting: `Start-ScheduledTask -TaskName DigiDartsServ
   directly if you're SSH'd in.
 - Reboot cold, confirm the server (and kiosk browser, if registered) comes
   up with zero manual steps.
+
+## 5. Power settings — don't let it sleep
+
+This is a dedicated always-on device, not a laptop, so disable sleep on AC
+power (from an elevated prompt):
+
+```powershell
+powercfg /change standby-timeout-ac 0
+powercfg /change hibernate-timeout-ac 0
+```
+
+Without this, Windows' default idle timeout will put the machine to sleep
+mid-session — at which point none of the auto-start tasks above matter,
+since the whole machine (including its network interface) goes dark.
+
+## 6. Autodarts Desktop (Path A vision pipeline)
+
+If going the Autodarts route (see the main README's Part 2, Path A):
+
+1. Download the Windows installer from
+   [autodarts.io/downloads](https://autodarts.io/downloads) and run it.
+2. Register its own account at [autodarts.io](https://autodarts.io) and
+   create a Dartboard entry there — this is a manual signup step, can't be
+   scripted. You'll need the Board ID + API Key it gives you once cameras
+   are connected.
+3. Register its auto-start task:
+   ```powershell
+   cd dartboard-system\deploy\windows
+   .\register-autodarts-task.ps1
+   ```
+   This finds the *stable* launcher path (`...\AppData\Local\desktop\Autodarts
+   Desktop.exe`) rather than the version-numbered install folder, so it
+   keeps working across Autodarts' own auto-updates.
+4. Board Manager is reachable at `http://localhost:3180` on the machine
+   itself, or `http://<its-ip>:3180` from elsewhere on the network — you'll
+   likely need a firewall rule for port 3180 the same way DigiDarts needed
+   one for 8080:
+   ```powershell
+   New-NetFirewallRule -DisplayName "Autodarts Board Manager" -Direction Inbound -LocalPort 3180 -Protocol TCP -Action Allow -Profile Private,Domain
+   ```
+5. Camera calibration itself needs the actual cameras mounted — nothing to
+   do here until that hardware exists.
