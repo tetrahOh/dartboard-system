@@ -6,3 +6,4 @@ __pycache__/
 venv/
 *.npy
 .env
+deploy/windows/*.log
