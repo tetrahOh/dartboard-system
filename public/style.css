@@ -1,16 +1,32 @@
 :root {
-  --bg-0: #0a0a18;
-  --bg-1: #14122b;
-  --bg-2: #1c1840;
-  --ink: #f5f3ff;
-  --muted: #9b93c9;
+  --sky-top: #7ec8f2;
+  --sky-mid: #cdeeff;
+  --grass: #6fc766;
+  --wood-dark: #4a2f1c;
+  --wood-mid: #7a4b28;
+  --wood-light: #b3814f;
+  --cream: #fff8e7;
+  --ink: #3a2415;
+  --muted: #8a6a4a;
   --pink: #ff3ea8;
-  --cyan: #2fe8ff;
-  --lime: #c6ff5a;
+  --cyan: #29c9c9;
+  --lime: #5da130;
+  --lime-bright: #b9e64d;
   --violet: #8b5cf6;
   --orange: #ff8a3d;
-  --card: rgba(255, 255, 255, 0.05);
-  --card-border: rgba(255, 255, 255, 0.09);
+  --gold: #ffcf4d;
+  /* Deeper variants for solid fills that carry white text - the bright
+     versions above read as under 2:1 contrast with white in places
+     (measured), these clear ~4.5-5.8:1 while staying recognizably the
+     same hue. */
+  --pink-fill: #c2126f;
+  --orange-fill: #b5490f;
+  --violet-fill: #7645d6;
+  --cyan-fill: #158080;
+  --lime-fill: #3d7a1f;
+  --gold-fill: #8f6000;
+  --card: var(--cream);
+  --card-border: var(--wood-light);
   font-size: 16px;
 }
 
@@ -19,11 +35,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 15% 0%, rgba(255, 62, 168, 0.18), transparent 45%),
-    radial-gradient(circle at 85% 15%, rgba(47, 232, 255, 0.14), transparent 40%),
-    radial-gradient(circle at 50% 100%, rgba(139, 92, 246, 0.16), transparent 55%),
-    var(--bg-0);
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--grass) 100%);
   color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
@@ -46,63 +58,93 @@ body {
   letter-spacing: 0.02em;
   font-weight: 900;
   font-style: italic;
-  background: linear-gradient(90deg, var(--pink), var(--violet) 55%, var(--cyan));
+  background: linear-gradient(90deg, var(--pink-fill), var(--violet-fill) 55%, var(--orange-fill));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   text-transform: uppercase;
-  filter: drop-shadow(0 0 18px rgba(255, 62, 168, 0.35));
+  /* A cream stroke so the gradient stays legible over the sky background
+     regardless of exactly where the gradient sits (measured some raw
+     gradient colors on sky as low as 1.3:1 contrast with no outline). */
+  -webkit-text-stroke: 2px rgba(255, 248, 231, 0.9);
+  paint-order: stroke fill;
+  filter: drop-shadow(0 3px 0 rgba(74, 47, 28, 0.25));
 }
 .brand .sub {
-  color: var(--muted);
+  color: var(--wood-dark);
   font-size: 0.92rem;
   margin-top: 0.35rem;
   letter-spacing: 0.04em;
+  font-weight: 700;
 }
 
 .card {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 18px;
+  background: var(--cream);
+  border: 3px solid var(--wood-mid);
+  border-radius: 20px;
   padding: 1.25rem;
-  margin-bottom: 1rem;
-  backdrop-filter: blur(6px);
+  margin-bottom: 1.1rem;
+  box-shadow: 0 5px 0 var(--wood-dark), 0 8px 16px rgba(74, 47, 28, 0.22);
 }
 
 .card h2 {
-  margin: 0 0 0.85rem;
-  font-size: 0.78rem;
+  display: inline-block;
+  margin: 0 0 0.6rem;
+  padding: 0.35rem 0.9rem 0.35rem 0.7rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--muted);
+  letter-spacing: 0.1em;
+  color: var(--cream);
   font-weight: 800;
+  background: var(--wood-mid);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--wood-dark);
+}
+.card h2::before { content: '🌿'; margin-right: 0.35rem; }
+
+.section-help {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 0.85rem;
+  line-height: 1.4;
+}
+
+/* General-sibling (not adjacent) so a hidden section in between doesn't
+   break the "has a visible section before it" check - e.g. Killer mode
+   hides Finish/Legs and shows only Lives, which must NOT get a floating
+   divider above it since it's the only visible section in the card. */
+.rules-section:not(.hidden) ~ .rules-section:not(.hidden) {
+  margin-top: 1.2rem;
+  padding-top: 1.2rem;
+  border-top: 2px dashed var(--wood-light);
 }
 
 /* game mode picker */
 .mode-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 0.6rem;
+  gap: 0.7rem;
 }
 .mode-card {
   position: relative;
-  border-radius: 14px;
-  border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  border: 3px solid var(--wood-light);
+  background: #fff;
   padding: 0.8rem 0.7rem;
   cursor: pointer;
   text-align: left;
+  box-shadow: 0 4px 0 rgba(74, 47, 28, 0.22);
 }
 .how-to-btn {
   position: absolute;
   top: 0.4rem;
   right: 0.4rem;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  border: 1px solid var(--card-border);
-  background: rgba(0, 0, 0, 0.3);
-  color: var(--muted);
+  border: 2px solid var(--wood-dark);
+  background: var(--gold);
+  color: var(--wood-dark);
   font-weight: 800;
   font-size: 0.75rem;
   line-height: 1;
@@ -112,13 +154,14 @@ body {
   justify-content: center;
 }
 .how-to-btn:active { transform: scale(0.9); }
-.mode-card .mode-name { font-weight: 800; font-size: 1rem; }
+.mode-card .mode-name { font-weight: 800; font-size: 1rem; color: var(--ink); }
 .mode-card .mode-desc { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; line-height: 1.35; }
 .mode-card.active {
-  background: linear-gradient(135deg, rgba(255, 62, 168, 0.22), rgba(139, 92, 246, 0.22));
-  border-color: var(--pink);
-  box-shadow: 0 0 0 1px var(--pink), 0 0 22px rgba(255, 62, 168, 0.25);
+  background: linear-gradient(135deg, var(--pink-fill), var(--violet-fill));
+  border-color: var(--wood-dark);
+  box-shadow: 0 4px 0 var(--wood-dark);
 }
+.mode-card.active .mode-name, .mode-card.active .mode-desc { color: #fff; }
 
 .choice-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .choice {
@@ -126,19 +169,36 @@ body {
   min-width: 90px;
   padding: 0.7rem 0.5rem;
   text-align: center;
-  border-radius: 12px;
-  border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  border: 3px solid var(--wood-light);
+  background: #fff;
   color: var(--ink);
   cursor: pointer;
   font-weight: 700;
   font-size: 0.95rem;
+  box-shadow: 0 3px 0 rgba(74, 47, 28, 0.2);
 }
 .choice.active {
-  background: linear-gradient(135deg, var(--pink), var(--violet));
-  border-color: transparent;
-  box-shadow: 0 0 16px rgba(255, 62, 168, 0.35);
+  background: linear-gradient(135deg, var(--pink-fill), var(--violet-fill));
+  border-color: var(--wood-dark);
+  color: #fff;
+  box-shadow: 0 3px 0 var(--wood-dark);
 }
+
+.choice-label { font-weight: 800; font-size: 0.95rem; }
+.choice-help {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+.choice.active .choice-help { color: rgba(255, 255, 255, 0.9); }
+
+/* Finish: two-line explanations need room, so these stack full-width
+   instead of squeezing side by side like the plain single-line choices. */
+#x01-options .choice-row { flex-direction: column; }
+#x01-options .choice { flex: none; min-width: 0; width: 100%; text-align: left; padding: 0.85rem 1rem; }
 
 .player-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; }
 .player-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
@@ -147,8 +207,8 @@ body {
   flex-shrink: 0;
   width: 44px; height: 44px;
   border-radius: 50%;
-  border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.05);
+  border: 3px solid var(--wood-light);
+  background: #fff;
   font-size: 1.4rem;
   line-height: 1;
   cursor: pointer;
@@ -162,31 +222,31 @@ body {
   gap: 0.4rem;
   padding: 0.6rem;
   margin: -0.15rem 0 0.15rem;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--card-border);
+  background: #fff3d6;
+  border: 2px solid var(--wood-light);
   border-radius: 12px;
 }
 .avatar-option {
   width: 100%; aspect-ratio: 1;
   border-radius: 10px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.04);
+  background: #fff;
   font-size: 1.3rem;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.avatar-option.active { border-color: var(--cyan); background: rgba(47, 232, 255, 0.15); }
+.avatar-option.active { border-color: var(--pink); background: rgba(255, 62, 168, 0.15); }
 .player-row input {
   flex: 1;
   min-width: 100px;
   padding: 0.6rem 0.75rem;
   border-radius: 12px;
-  border: 1px solid var(--card-border);
-  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--wood-light);
+  background: #fff;
   color: var(--ink);
   font-size: 1rem;
 }
-.player-row input:focus { outline: 2px solid var(--cyan); outline-offset: 1px; }
+.player-row input:focus { outline: 2px solid var(--pink); outline-offset: 1px; }
 .player-row button.remove-btn { background: transparent; border: none; color: var(--muted); font-size: 1.15rem; cursor: pointer; padding: 0.2rem 0.3rem; }
 
 .team-select {
@@ -197,12 +257,12 @@ body {
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 800;
-  border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid var(--wood-light);
+  background: #fff;
   color: var(--muted);
   cursor: pointer;
 }
-.team-chip.active { color: var(--bg-0); border-color: transparent; }
+.team-chip.active { color: #fff; border-color: transparent; }
 
 .player-count-note { font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; }
 
@@ -210,8 +270,8 @@ body {
 .teams-toolbar button {
   padding: 0.5rem 0.9rem;
   border-radius: 10px;
-  border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid var(--wood-light);
+  background: #fff;
   color: var(--ink);
   font-weight: 700;
   font-size: 0.82rem;
@@ -229,23 +289,23 @@ body {
   padding: 1.05rem;
   border-radius: 14px;
   border: none;
-  background: linear-gradient(90deg, var(--pink), var(--violet) 60%, var(--cyan));
+  background: linear-gradient(90deg, var(--pink-fill), var(--violet-fill) 60%, var(--orange-fill));
   background-size: 160% 100%;
-  color: #0a0a18;
+  color: #fff;
   font-size: 1.1rem;
   font-weight: 900;
   letter-spacing: 0.02em;
   cursor: pointer;
   margin-top: 0.5rem;
-  box-shadow: 0 8px 26px rgba(139, 92, 246, 0.35);
+  box-shadow: 0 5px 0 var(--wood-dark), 0 8px 18px rgba(74, 47, 28, 0.3);
 }
-.primary-btn:active { transform: translateY(1px); }
+.primary-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--wood-dark); }
 
 /* ---------- How-to-play tutorial ---------- */
 .tutorial-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 5, 15, 0.75);
+  background: rgba(58, 36, 21, 0.55);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -257,11 +317,11 @@ body {
   position: relative;
   width: 100%;
   max-width: 380px;
-  background: var(--bg-1);
-  border: 1px solid var(--card-border);
+  background: var(--cream);
+  border: 4px solid var(--wood-mid);
   border-radius: 20px;
   padding: 1.5rem 1.25rem 1.25rem;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 0 var(--wood-dark), 0 14px 30px rgba(0, 0, 0, 0.3);
 }
 .tutorial-close {
   position: absolute;
@@ -270,8 +330,8 @@ body {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid var(--wood-light);
+  background: #fff;
   color: var(--ink);
   font-size: 0.9rem;
   cursor: pointer;
@@ -281,7 +341,7 @@ body {
   font-size: 1.2rem;
   text-align: center;
   margin-bottom: 1rem;
-  background: linear-gradient(90deg, var(--pink), var(--cyan));
+  background: linear-gradient(90deg, var(--pink-fill), var(--violet-fill));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -304,13 +364,13 @@ body {
   animation-delay: var(--delay, 0s);
 }
 .tutorial-slide .icon { font-size: 3rem; line-height: 1; }
-.tutorial-slide .text { font-size: 1rem; font-weight: 700; line-height: 1.4; }
+.tutorial-slide .text { font-size: 1rem; font-weight: 700; line-height: 1.4; color: var(--ink); }
 .tutorial-slide .example {
   font-size: 0.85rem;
   font-weight: 800;
-  color: var(--lime);
-  background: rgba(198, 255, 90, 0.1);
-  border: 1px solid var(--lime);
+  color: var(--lime-fill);
+  background: rgba(61, 122, 31, 0.12);
+  border: 1px solid var(--lime-fill);
   border-radius: 10px;
   padding: 0.3rem 0.7rem;
 }
@@ -332,14 +392,14 @@ body {
 .tutorial-dots { display: flex; justify-content: center; gap: 0.4rem; margin-top: 0.75rem; }
 .tutorial-dot {
   width: 6px; height: 6px; border-radius: 50%;
-  background: var(--card-border);
+  background: var(--wood-light);
   animation: tutorialDot var(--cycle, 12s) infinite;
   animation-delay: var(--delay, 0s);
 }
 @keyframes tutorialDot {
-  0% { background: var(--cyan); transform: scale(1.3); }
-  20% { background: var(--cyan); transform: scale(1.3); }
-  25%, 100% { background: var(--card-border); transform: scale(1); }
+  0% { background: var(--pink); transform: scale(1.3); }
+  20% { background: var(--pink); transform: scale(1.3); }
+  25%, 100% { background: var(--wood-light); transform: scale(1); }
 }
 
 /* ---------- Game screen ---------- */
@@ -348,16 +408,19 @@ body {
 .game-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
 .game-topbar .brand-mini {
   font-weight: 900; font-style: italic; letter-spacing: 0.02em;
-  background: linear-gradient(90deg, var(--pink), var(--cyan));
+  background: linear-gradient(90deg, var(--pink-fill), var(--violet-fill));
   -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 248, 231, 0.9);
+  paint-order: stroke fill;
   font-size: 1.1rem;
 }
 .connection-error {
   text-align: center;
   font-weight: 800;
   font-size: 0.85rem;
-  color: #0a0a18;
-  background: var(--orange);
+  color: #fff;
+  background: var(--orange-fill);
+  border: 2px solid var(--wood-dark);
   border-radius: 12px;
   padding: 0.6rem;
   margin-bottom: 0.6rem;
@@ -365,47 +428,70 @@ body {
 }
 
 .round-banner {
-  text-align: center; font-weight: 800; font-size: 0.85rem; color: var(--lime);
+  display: inline-block;
+  text-align: center; font-weight: 800; font-size: 0.8rem; color: #fff;
+  background: var(--lime-fill);
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
   margin-bottom: 0.6rem; letter-spacing: 0.03em;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15);
 }
 
 .scoreboard {
   display: flex;
   gap: 0.6rem;
   overflow-x: auto;
-  padding-bottom: 0.5rem;
+  padding: 0.35rem 0.35rem 0.5rem;
   margin-bottom: 0.75rem;
 }
 .player-card {
   flex: 1;
   min-width: 140px;
-  background: var(--card);
-  border: 1px solid var(--card-border);
+  border: 3px solid var(--wood-dark);
   border-radius: 16px;
-  padding: 0.8rem;
+  padding: 0.85rem 0.8rem;
   text-align: center;
+  color: #fff;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
 }
+/* Solid (not gradient) fills - a gradient here risks text landing on the
+   lighter end where white text loses too much contrast (measured some
+   combinations under 2:1). */
+.scoreboard .player-card:nth-child(6n+1) { background: var(--pink-fill); }
+.scoreboard .player-card:nth-child(6n+2) { background: var(--orange-fill); }
+.scoreboard .player-card:nth-child(6n+3) { background: var(--violet-fill); }
+.scoreboard .player-card:nth-child(6n+4) { background: var(--cyan-fill); }
+.scoreboard .player-card:nth-child(6n+5) { background: var(--lime-fill); }
+.scoreboard .player-card:nth-child(6n+6) { background: var(--gold-fill); }
 .player-card.turn {
-  border-color: var(--cyan);
-  background: rgba(47, 232, 255, 0.1);
-  box-shadow: 0 0 0 1px var(--cyan), 0 0 20px rgba(47, 232, 255, 0.25);
+  border-color: #fff;
+  box-shadow: 0 0 0 3px #fff, 0 0 16px rgba(255, 207, 77, 0.7), 0 4px 0 rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px);
 }
-.player-card.eliminated { opacity: 0.4; filter: grayscale(0.6); }
-.player-card .avatar-display { font-size: 1.8rem; line-height: 1; margin-bottom: 0.2rem; }
-.player-card .avatar-display.team-avatars { font-size: 1.3rem; letter-spacing: -0.1em; }
+.player-card.eliminated { opacity: 0.45; filter: grayscale(0.6); transform: none; }
+.player-card .avatar-display {
+  width: 2.4rem; height: 2.4rem;
+  margin: 0 auto 0.3rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 1.4rem; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.player-card .avatar-display.team-avatars {
+  width: auto; border-radius: 999px; padding: 0.25rem 0.6rem;
+  font-size: 1.1rem; letter-spacing: -0.1em;
+}
 .player-card .name { font-weight: 800; font-size: 0.95rem; }
-.player-card .members { font-size: 0.68rem; color: var(--muted); margin-top: 0.1rem; }
-.player-card .score { font-size: 2rem; font-weight: 900; color: var(--lime); line-height: 1.2; }
-.player-card .legs { font-size: 0.75rem; color: var(--muted); }
+.player-card .members { font-size: 0.68rem; color: rgba(255, 255, 255, 0.85); margin-top: 0.1rem; }
+.player-card .score { font-size: 2rem; font-weight: 900; color: #fff; line-height: 1.2; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.15); }
+.player-card .legs { font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); }
 .player-card .badge-row { display: flex; justify-content: center; gap: 0.3rem; margin-top: 0.3rem; flex-wrap: wrap; }
 .badge {
   display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px;
-  font-size: 0.68rem; font-weight: 800; border: 1px solid var(--card-border);
-  color: var(--muted);
+  font-size: 0.68rem; font-weight: 800; border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
 }
-.badge.lives { color: var(--pink); border-color: var(--pink); }
-.badge.killer { color: var(--orange); border-color: var(--orange); }
-.badge.target { color: var(--cyan); border-color: var(--cyan); }
 
 .turn-strip {
   display: flex;
@@ -419,15 +505,26 @@ body {
 .pip {
   width: 54px; height: 36px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--card-border);
+  background: #fff;
+  border: 2px solid var(--wood-light);
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 0.9rem;
+  color: var(--ink);
 }
-.pip.filled { background: linear-gradient(135deg, var(--pink), var(--violet)); border-color: transparent; }
+.pip.filled { background: linear-gradient(135deg, var(--pink), var(--violet)); border-color: var(--wood-dark); color: #fff; }
 
-.checkout-hint { color: var(--lime); font-weight: 700; font-size: 0.9rem; }
-.limit-hint { color: var(--orange); font-weight: 700; font-size: 0.9rem; }
+.checkout-hint, .limit-hint {
+  display: inline-block;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #fff;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15);
+}
+.checkout-hint:empty, .limit-hint:empty { padding: 0; box-shadow: none; }
+.checkout-hint { background: var(--lime-fill); }
+.limit-hint { background: var(--orange-fill); }
 
 .board-wrap { display: flex; justify-content: center; }
 #board-svg { width: min(92vw, 560px); height: auto; touch-action: manipulation; }
@@ -441,20 +538,22 @@ body {
 .controls-row button {
   padding: 0.65rem 1.15rem;
   border-radius: 12px;
-  border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.05);
+  border: 3px solid var(--wood-light);
+  background: #fff;
   color: var(--ink);
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 3px 0 rgba(74, 47, 28, 0.2);
 }
+.controls-row button:active { transform: translateY(3px); box-shadow: none; }
 
 .log-panel {
   margin-top: 1rem;
   max-height: 140px;
   overflow-y: auto;
   font-size: 0.85rem;
-  color: var(--muted);
-  border-top: 1px solid var(--card-border);
+  color: var(--wood-dark);
+  border-top: 2px dashed var(--wood-light);
   padding-top: 0.5rem;
 }
 .log-panel div { padding: 0.15rem 0; }
@@ -462,25 +561,25 @@ body {
 .winner-banner {
   text-align: center;
   padding: 1.75rem 1.25rem;
-  background: linear-gradient(135deg, rgba(255, 62, 168, 0.18), rgba(47, 232, 255, 0.14));
-  border: 1px solid var(--pink);
+  background: linear-gradient(135deg, var(--pink-fill), var(--violet-fill));
+  border: 4px solid var(--wood-dark);
   border-radius: 18px;
   margin-bottom: 0.75rem;
-  box-shadow: 0 0 30px rgba(255, 62, 168, 0.25);
+  box-shadow: 0 6px 0 var(--wood-dark), 0 10px 20px rgba(0, 0, 0, 0.25);
 }
-.winner-banner .title { font-size: 1.5rem; font-weight: 900; color: var(--ink); }
+.winner-banner .title { font-size: 1.5rem; font-weight: 900; color: #fff; }
 
 /* ---------- Flavor animations ---------- */
 @keyframes animHit { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 .anim-hit .score { animation: animHit 0.35s ease; display: inline-block; }
 
 @keyframes animBust { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-9px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(5px); } }
-.anim-bust { animation: animBust 0.5s ease; box-shadow: 0 0 0 2px var(--pink), 0 0 24px rgba(255, 62, 168, 0.5) !important; }
+.anim-bust { animation: animBust 0.5s ease; box-shadow: 0 0 0 3px var(--pink), 0 0 20px rgba(255, 62, 168, 0.5) !important; }
 
 @keyframes animKiller { 0%, 100% { filter: drop-shadow(0 0 4px var(--orange)); } 50% { filter: drop-shadow(0 0 18px var(--orange)); } }
 .anim-killer { animation: animKiller 0.7s ease 2; }
 
-@keyframes animEliminated { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0.4; transform: scale(0.97); } }
+@keyframes animEliminated { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0.45; transform: scale(0.97); } }
 .anim-eliminated { animation: animEliminated 0.9s ease forwards; }
 
 @keyframes animHeartbreak { 0%, 100% { transform: scale(1) rotate(0deg); } 30% { transform: scale(0.93) rotate(-3deg); } 60% { transform: scale(0.96) rotate(3deg); } }
@@ -489,7 +588,7 @@ body {
 @keyframes animHalve { 0% { transform: scaleY(1); } 50% { transform: scaleY(0.55); } 100% { transform: scaleY(1); } }
 .anim-halve .score { animation: animHalve 0.5s ease; display: inline-block; transform-origin: center; }
 
-@keyframes animWinPulse { 0%, 100% { box-shadow: 0 0 0 1px var(--lime); } 50% { box-shadow: 0 0 32px 6px var(--lime); } }
+@keyframes animWinPulse { 0%, 100% { box-shadow: 0 0 0 3px #fff; } 50% { box-shadow: 0 0 32px 6px var(--gold); } }
 .anim-win-pulse { animation: animWinPulse 0.6s ease 2; }
 
 @keyframes animUndo { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }

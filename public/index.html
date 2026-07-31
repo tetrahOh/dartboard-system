@@ -74,29 +74,40 @@
     </div>
   </div>
 
-  <div class="card" id="x01-options">
-    <h2>Finish</h2>
-    <div class="choice-row">
-      <div class="choice active" data-double="true">Double out</div>
-      <div class="choice" data-double="false">Straight out</div>
+  <div class="card">
+    <div class="rules-section" id="x01-options">
+      <h2>Finish</h2>
+      <div class="section-help">How a leg has to end</div>
+      <div class="choice-row">
+        <div class="choice active" data-double="true">
+          <div class="choice-label">Double out</div>
+          <div class="choice-help">Official rules — your last dart must land on a double</div>
+        </div>
+        <div class="choice" data-double="false">
+          <div class="choice-label">Straight out</div>
+          <div class="choice-help">Easier — any dart that brings you to exactly 0 wins</div>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div class="card" id="legs-card">
-    <h2>Legs to win</h2>
-    <div class="choice-row" id="legs-choices">
-      <div class="choice active" data-legs="1">1</div>
-      <div class="choice" data-legs="3">Best of 3</div>
-      <div class="choice" data-legs="5">Best of 5</div>
+    <div class="rules-section" id="legs-card">
+      <h2>Legs to win</h2>
+      <div class="section-help">A "leg" is one full countdown to zero — win enough legs to win the match</div>
+      <div class="choice-row" id="legs-choices">
+        <div class="choice active" data-legs="1">Single leg</div>
+        <div class="choice" data-legs="3">Best of 3</div>
+        <div class="choice" data-legs="5">Best of 5</div>
+      </div>
     </div>
-  </div>
 
-  <div class="card hidden" id="lives-card">
-    <h2>Lives per player</h2>
-    <div class="choice-row" id="lives-choices">
-      <div class="choice" data-lives="1">1</div>
-      <div class="choice active" data-lives="3">3</div>
-      <div class="choice" data-lives="5">5</div>
+    <div class="rules-section hidden" id="lives-card">
+      <h2>Lives per player</h2>
+      <div class="section-help">Lose them all and you're eliminated</div>
+      <div class="choice-row" id="lives-choices">
+        <div class="choice" data-lives="1">1</div>
+        <div class="choice active" data-lives="3">3</div>
+        <div class="choice" data-lives="5">5</div>
+      </div>
     </div>
   </div>
 
@@ -109,6 +120,7 @@
 
   <div class="card">
     <h2>Teams</h2>
+    <div class="section-help">Free-for-all: everyone plays for themselves. Team play: players share one score.</div>
     <div class="choice-row">
       <div class="choice active" id="teams-off" data-teams="false">Free-for-all</div>
       <div class="choice" id="teams-on" data-teams="true">Team play</div>
