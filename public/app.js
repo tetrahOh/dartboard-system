@@ -23,6 +23,95 @@
   const LEGS_MODES = new Set(['x01', 'cricket']);
   const LIVES_MODES = new Set(['killer', 'limit']);
 
+  // ---------- How-to-play tutorials ----------
+  const TUTORIAL_TITLES = {
+    x01: 'How to play X01', cricket: 'How to play Cricket',
+    around_the_clock: 'How to play Around the Clock', killer: 'How to play Killer',
+    shanghai: 'How to play Shanghai', halve_it: 'How to play Halve It', limit: 'How to play Limit',
+  };
+  const TUTORIALS = {
+    x01: [
+      { icon: '🎯', text: 'Start at 501 (or 301 / 701)' },
+      { icon: '🎯', text: 'Throw 3 darts a turn', example: 'T20 = -60 points' },
+      { icon: '🔢', text: 'Get to exactly 0 to win' },
+      { icon: '✅', text: 'Your last dart must be a DOUBLE', example: 'D20 finishes 40', bad: 'Go below 0, or land on 1 — BUST' },
+    ],
+    cricket: [
+      { icon: '🎯', text: 'Close 15, 16, 17, 18, 19, 20 & Bull' },
+      { icon: '🔓', text: 'Hit a number 3 times to open it', example: 'S = 1 mark  D = 2  T = 3' },
+      { icon: '💰', text: "Extra hits SCORE — if rivals haven't closed it yet" },
+      { icon: '🏆', text: 'Close everything + highest score wins' },
+    ],
+    around_the_clock: [
+      { icon: '🔢', text: 'Hit 1, 2, 3 … up to 20, then Bull — in order' },
+      { icon: '🎯', text: 'Any hit on your number advances you', example: 'Single, double, or triple all count' },
+      { icon: '❌', text: 'Miss your number? Try again next turn' },
+      { icon: '🏁', text: 'First to hit Bull after 20 wins!' },
+    ],
+    killer: [
+      { icon: '🔢', text: 'Everyone gets a random number' },
+      { icon: '🔪', text: 'Double your own number to go KILLER' },
+      { icon: '💥', text: "Then hit opponents' numbers to take their lives" },
+      { icon: '🏆', text: 'Last player with lives left wins!' },
+    ],
+    shanghai: [
+      { icon: '🔢', text: '20 rounds — round 1 targets 1, round 2 targets 2…' },
+      { icon: '🎯', text: "Score by hitting THIS round's number", example: 'Single, Double, Triple all count' },
+      { icon: '🎉', text: 'S + D + T of it in ONE turn = SHANGHAI', example: 'Instant win!' },
+      { icon: '🏆', text: 'Otherwise, highest score after 20 rounds wins' },
+    ],
+    halve_it: [
+      { icon: '🎯', text: 'Each round has a target', example: 'A number, any double, any triple, or Bull' },
+      { icon: '💰', text: 'Hit it this turn and you score points' },
+      { icon: '😬', text: 'Miss completely and your ENTIRE score is HALVED' },
+      { icon: '🏆', text: 'Highest score after all rounds wins' },
+    ],
+    limit: [
+      { icon: '👑', text: 'Each round, one player is the SETTER' },
+      { icon: '📉', text: 'Their dart sets the limit', example: 'It can only go LOWER than before' },
+      { icon: '❤️', text: 'Everyone else: beat the limit, or lose a life' },
+      { icon: '🏆', text: '3 lives each — last one standing wins!' },
+    ],
+  };
+
+  function openTutorial(modeKey) {
+    const steps = TUTORIALS[modeKey];
+    if (!steps) return;
+    document.getElementById('tutorial-title').textContent = TUTORIAL_TITLES[modeKey] || 'How to play';
+    const cycle = `${steps.length * 3}s`;
+    const slidesEl = document.getElementById('tutorial-slides');
+    const dotsEl = document.getElementById('tutorial-dots');
+    slidesEl.innerHTML = '';
+    dotsEl.innerHTML = '';
+    steps.forEach((step, i) => {
+      const delay = `${i * 3}s`;
+      const slide = document.createElement('div');
+      slide.className = 'tutorial-slide';
+      slide.style.setProperty('--cycle', cycle);
+      slide.style.setProperty('--delay', delay);
+      slide.innerHTML = `<div class="icon">${step.icon}</div><div class="text">${step.text}</div>` +
+        (step.example ? `<div class="example">${step.example}</div>` : '') +
+        (step.bad ? `<div class="example bad">${step.bad}</div>` : '');
+      slidesEl.appendChild(slide);
+
+      const dot = document.createElement('div');
+      dot.className = 'tutorial-dot';
+      dot.style.setProperty('--cycle', cycle);
+      dot.style.setProperty('--delay', delay);
+      dotsEl.appendChild(dot);
+    });
+    document.getElementById('tutorial-overlay').classList.remove('hidden');
+  }
+
+  function closeTutorial() {
+    document.getElementById('tutorial-overlay').classList.add('hidden');
+  }
+
+  document.getElementById('tutorial-close').addEventListener('click', closeTutorial);
+  document.getElementById('tutorial-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'tutorial-overlay') closeTutorial();
+  });
+
   const playerList = document.getElementById('player-list');
   const playerCountNote = document.getElementById('player-count-note');
   const teamsPanel = document.getElementById('teams-panel');
@@ -113,6 +202,11 @@
 
   // ---------- Mode grid ----------
   document.getElementById('mode-grid').addEventListener('click', (e) => {
+    const howTo = e.target.closest('.how-to-btn');
+    if (howTo) {
+      openTutorial(howTo.dataset.tutorial);
+      return;
+    }
     const el = e.target.closest('.mode-card');
     if (!el) return;
     [...el.parentElement.children].forEach((c) => c.classList.remove('active'));

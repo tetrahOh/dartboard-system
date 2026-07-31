@@ -18,40 +18,58 @@
     <h2>Game mode</h2>
     <div class="mode-grid" id="mode-grid">
       <div class="mode-card active" data-mode="x01" data-score="501">
+        <button type="button" class="how-to-btn" data-tutorial="x01" aria-label="How to play">?</button>
         <div class="mode-name">501</div>
         <div class="mode-desc">Classic countdown. First to zero, checkout on a double.</div>
       </div>
       <div class="mode-card" data-mode="x01" data-score="301">
+        <button type="button" class="how-to-btn" data-tutorial="x01" aria-label="How to play">?</button>
         <div class="mode-name">301</div>
         <div class="mode-desc">Faster countdown version of X01.</div>
       </div>
       <div class="mode-card" data-mode="x01" data-score="701">
+        <button type="button" class="how-to-btn" data-tutorial="x01" aria-label="How to play">?</button>
         <div class="mode-name">701</div>
         <div class="mode-desc">Longer countdown version of X01.</div>
       </div>
       <div class="mode-card" data-mode="cricket">
+        <button type="button" class="how-to-btn" data-tutorial="cricket" aria-label="How to play">?</button>
         <div class="mode-name">Cricket</div>
         <div class="mode-desc">Close 15-20 &amp; Bull before your rivals, score while they're open.</div>
       </div>
       <div class="mode-card" data-mode="around_the_clock">
+        <button type="button" class="how-to-btn" data-tutorial="around_the_clock" aria-label="How to play">?</button>
         <div class="mode-name">Around the Clock</div>
         <div class="mode-desc">Hit 1 through 20, then Bull, in order. First there wins.</div>
       </div>
       <div class="mode-card" data-mode="killer">
+        <button type="button" class="how-to-btn" data-tutorial="killer" aria-label="How to play">?</button>
         <div class="mode-name">Killer</div>
         <div class="mode-desc">Double your own number to go killer, then hunt everyone else's.</div>
       </div>
       <div class="mode-card" data-mode="shanghai">
+        <button type="button" class="how-to-btn" data-tutorial="shanghai" aria-label="How to play">?</button>
         <div class="mode-name">Shanghai</div>
         <div class="mode-desc">20 rounds, one number each. S+D+T of the round's number = instant win.</div>
       </div>
       <div class="mode-card" data-mode="halve_it">
+        <button type="button" class="how-to-btn" data-tutorial="halve_it" aria-label="How to play">?</button>
         <div class="mode-name">Halve It</div>
         <div class="mode-desc">Hit the round's target or watch your score get cut in half.</div>
       </div>
       <div class="mode-card" data-mode="limit">
+        <button type="button" class="how-to-btn" data-tutorial="limit" aria-label="How to play">?</button>
         <div class="mode-name">Limit</div>
         <div class="mode-desc">A rotating setter sets the bar. Miss it, lose a life. 3 lives each.</div>
+      </div>
+    </div>
+
+    <div class="tutorial-overlay hidden" id="tutorial-overlay">
+      <div class="tutorial-modal">
+        <button type="button" class="tutorial-close" id="tutorial-close" aria-label="Close">✕</button>
+        <div class="tutorial-title" id="tutorial-title"></div>
+        <div class="tutorial-slides" id="tutorial-slides"></div>
+        <div class="tutorial-dots" id="tutorial-dots"></div>
       </div>
     </div>
   </div>
