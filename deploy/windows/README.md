@@ -51,6 +51,25 @@ This registers two Scheduled Tasks, both triggered "at log on":
 
 Test immediately without rebooting: `Start-ScheduledTask -TaskName DigiDartsServer`
 
+## 3b. Register the watchdog (recommended — covers a real failure mode)
+
+Observed live on the DreamQuest Pro: a sleep/wake cycle can kill the
+*entire* process tree (including the batch script's own restart loop, not
+just the inner `node.exe`), with no clean exit for anything to log or react
+to. Neither the self-healing batch loop nor the "at log on" trigger catches
+this, since sleep/resume doesn't always fire a fresh logon event. A
+separate periodic health check is the real fix:
+
+```powershell
+.\register-watchdog.ps1
+```
+
+Registers `DigiDartsWatchdog`, which checks `http://localhost:8080` every 5
+minutes and restarts the `DigiDartsServer` task if it's not responding.
+Logs to `watchdog.log` in this same folder. Verified against a real
+worst-case test (killing the entire process tree, not just `node.exe`) — it
+correctly detects the outage and recovers within about 10 seconds.
+
 ## 4. Verify
 
 - From another device on the same WiFi: `http://digidarts.local:8080`
