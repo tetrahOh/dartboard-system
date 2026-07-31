@@ -39,6 +39,41 @@ function label(segment, multiplier) {
   return `${p}${segment}`;
 }
 
+// All single-dart scoring options, highest value first (checkout searches
+// prefer big hits first, matching how real checkout charts are presented).
+const DOUBLES = [...Array(20)].map((_, i) => ({ value: 2 * (i + 1), label: `D${i + 1}` }));
+DOUBLES.push({ value: 50, label: 'DB' });
+const ALL_THROWS = [...Array(20)].flatMap((_, i) => {
+  const n = i + 1;
+  return [{ value: n * 3, label: `T${n}` }, { value: n * 2, label: `D${n}` }, { value: n, label: `S${n}` }];
+});
+ALL_THROWS.push({ value: 25, label: 'B' }, { value: 50, label: 'DB' });
+ALL_THROWS.sort((a, b) => b.value - a.value);
+
+// Exhaustive search for a <=3-dart double-out checkout. Cheap enough (at
+// most ~22*22 combinations) to run on every state update without caching.
+function findCheckout(score) {
+  const oneDart = DOUBLES.find((d) => d.value === score);
+  if (oneDart) return [oneDart.label];
+
+  for (const first of ALL_THROWS) {
+    if (first.value >= score) continue;
+    const finish = DOUBLES.find((d) => d.value === score - first.value);
+    if (finish) return [first.label, finish.label];
+  }
+
+  for (const first of ALL_THROWS) {
+    if (first.value >= score) continue;
+    for (const second of ALL_THROWS) {
+      const remaining = score - first.value - second.value;
+      if (remaining <= 0) continue;
+      const finish = DOUBLES.find((d) => d.value === remaining);
+      if (finish) return [first.label, second.label, finish.label];
+    }
+  }
+  return null;
+}
+
 class Game {
   constructor({
     type = 'x01', startScore = 501, doubleOut = true, players, legsToWin = 1,
@@ -325,9 +360,12 @@ class Game {
     }
 
     if (this.type === 'limit') {
-      const active = this.competitors.filter((c) => !c.eliminated);
+      // round length = active INDIVIDUAL players, not competitors - turns rotate
+      // per-player even in team mode, so a team's active player count matters here,
+      // not the team count itself
+      const activePlayers = this.players.filter((p) => !this.competitorOf(p).eliminated);
       this.turnsThisRound += 1;
-      if (this.turnsThisRound >= active.length) this.turnsThisRound = 0;
+      if (this.turnsThisRound >= activePlayers.length) this.turnsThisRound = 0;
     }
 
     if (this.status === 'in_progress') this.currentPlayerIndex = this._nextActivePlayerIndex();
@@ -344,11 +382,17 @@ class Game {
   }
 
   _endByHighScore() {
-    const best = this.competitors.reduce((a, b) => (b.score > a.score ? b : a));
+    const topScore = Math.max(...this.competitors.map((c) => c.score));
+    const tied = this.competitors.filter((c) => c.score === topScore);
+    const best = tied[0];
     this.status = 'game_won';
     this.winnerId = best.id;
     this.winnerName = best.name;
-    this.log.unshift(`${best.name} wins with ${best.score} points!`);
+    if (tied.length > 1) {
+      this.log.unshift(`${tied.map((c) => c.name).join(' & ')} tie at ${topScore} points — ${best.name} wins the tiebreak!`);
+    } else {
+      this.log.unshift(`${best.name} wins with ${best.score} points!`);
+    }
   }
 
   _declareWinner(competitor, message) {
@@ -417,15 +461,7 @@ class Game {
   checkoutSuggestion(score) {
     if (score > 170 || score < 2) return null;
     if (!this.doubleOut) return null;
-    const doubles = [...Array(20)].map((_, i) => 2 * (i + 1)).concat([50]);
-    if (doubles.includes(score)) return [label(score === 50 ? 'BULL' : score / 2, score === 50 ? 2 : 2)];
-    const table = {
-      170: ['T20', 'T20', 'DB'], 167: ['T20', 'T19', 'DB'], 164: ['T20', 'T18', 'DB'],
-      161: ['T20', 'T17', 'DB'], 160: ['T20', 'T20', 'D20'], 158: ['T20', 'T20', 'D19'],
-      121: ['T20', 'S11', 'D25'], 100: ['T20', 'D20'], 96: ['T20', 'D18'],
-      80: ['T20', 'D10'], 60: ['S20', 'D20'], 50: ['DB'], 40: ['D20'], 32: ['D16'],
-    };
-    return table[score] || null;
+    return findCheckout(score);
   }
 
   _roundLabel() {

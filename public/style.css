@@ -231,6 +231,18 @@ body {
   -webkit-background-clip: text; background-clip: text; color: transparent;
   font-size: 1.1rem;
 }
+.connection-error {
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #0a0a18;
+  background: var(--orange);
+  border-radius: 12px;
+  padding: 0.6rem;
+  margin-bottom: 0.6rem;
+  animation: animUndo 1.2s ease infinite;
+}
+
 .round-banner {
   text-align: center; font-weight: 800; font-size: 0.85rem; color: var(--lime);
   margin-bottom: 0.6rem; letter-spacing: 0.03em;

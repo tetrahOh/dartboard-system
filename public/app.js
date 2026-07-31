@@ -8,7 +8,6 @@
   let legsToWin = 1;
   let livesStart = 3;
   let teamsEnabled = false;
-  let nextPlayerNum = 3;
   let nextTeamNum = 1;
   const MAX_PLAYERS = 10;
   const TEAM_COLORS = ['#ff3ea8', '#2fe8ff', '#c6ff5a', '#ff8a3d', '#8b5cf6', '#ffd23f'];
@@ -103,7 +102,6 @@
 
   document.getElementById('add-player').addEventListener('click', () => {
     if (players.length >= MAX_PLAYERS) return;
-    nextPlayerNum += 1;
     let teamId = null;
     if (teamsEnabled && teams.length) {
       const counts = teams.map((t) => players.filter((p) => p.teamId === t.id).length);
@@ -253,19 +251,35 @@
   });
   document.getElementById('miss-btn').addEventListener('click', () => sendThrow('MISS', 1));
   document.getElementById('undo-btn').addEventListener('click', async () => {
-    const res = await fetch(`/api/game/${gameId}/undo`, { method: 'POST' });
-    render(await res.json());
+    render(await postJSON(`/api/game/${gameId}/undo`));
   });
   document.getElementById('end-game-btn').addEventListener('click', () => location.reload());
   document.getElementById('new-game-btn').addEventListener('click', () => location.reload());
 
   async function sendThrow(segment, multiplier) {
-    const res = await fetch(`/api/game/${gameId}/throw`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ segment, multiplier }),
-    });
-    render(await res.json());
+    render(await postJSON(`/api/game/${gameId}/throw`, { segment, multiplier }));
+  }
+
+  // Retries indefinitely on network failure or a non-OK response, showing a
+  // visible banner the whole time - a dart was physically thrown, so the
+  // score must eventually catch up once the connection recovers rather than
+  // silently dropping it (matters most on venue/portable WiFi, not just
+  // home use).
+  async function postJSON(url, body) {
+    const opts = body
+      ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      : { method: 'POST' };
+    for (;;) {
+      try {
+        const res = await fetch(url, opts);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        document.getElementById('connection-error').classList.add('hidden');
+        return await res.json();
+      } catch (err) {
+        document.getElementById('connection-error').classList.remove('hidden');
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
   }
 
   // ---------- Render ----------
