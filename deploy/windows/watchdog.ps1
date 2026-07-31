@@ -1,10 +1,12 @@
 <#
-  Periodic health check for the DigiDarts server. Restarts the
-  DigiDartsServer scheduled task if the app stops responding, for any
-  reason - not just a clean process exit (which start-digidarts.bat's own
-  restart loop already handles), but also the sleep/wake-related process
-  kills observed live on the DreamQuest Pro, where the whole process tree
-  vanished without the batch loop getting a chance to log anything.
+  Periodic health check for DigiDarts and Autodarts Board Manager. Restarts
+  the relevant scheduled task if either stops responding, for any reason -
+  not just a clean process exit (which start-digidarts.bat's own restart
+  loop already handles for DigiDarts), but also the sleep/wake-related
+  process kills observed live on the DreamQuest Pro, where the whole
+  process tree vanished without anything getting a chance to log it.
+  Autodarts Desktop has no self-healing loop of its own, so it relies on
+  this watchdog entirely.
 
   Registered as its own recurring Scheduled Task (see register-watchdog.ps1)
   rather than relying solely on the AtLogOn trigger + self-healing batch
@@ -14,12 +16,26 @@
 
 $logPath = "$PSScriptRoot\watchdog.log"
 
-try {
-  $response = Invoke-WebRequest -Uri "http://localhost:8080" -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
-  if ($response.StatusCode -ne 200) { throw "unexpected status $($response.StatusCode)" }
-} catch {
-  Add-Content -Path $logPath -Value "[$(Get-Date)] DigiDarts not responding ($_) - restarting task"
-  Stop-ScheduledTask -TaskName DigiDartsServer -ErrorAction SilentlyContinue
-  Start-Sleep -Seconds 1
-  Start-ScheduledTask -TaskName DigiDartsServer
+function Test-ServiceHealthy {
+  param([string]$Url, [string]$TaskName, [string]$Label)
+  try {
+    $response = Invoke-WebRequest -Uri $Url -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
+    if ($response.StatusCode -ne 200) { throw "unexpected status $($response.StatusCode)" }
+  } catch {
+    Add-Content -Path $logPath -Value "[$(Get-Date)] $Label not responding ($_) - restarting task"
+    try {
+      Stop-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    } catch {
+      Add-Content -Path $logPath -Value "[$(Get-Date)] ${Label}: Stop-ScheduledTask failed: $_"
+    }
+    Start-Sleep -Seconds 1
+    try {
+      Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    } catch {
+      Add-Content -Path $logPath -Value "[$(Get-Date)] ${Label}: Start-ScheduledTask failed: $_"
+    }
+  }
 }
+
+Test-ServiceHealthy -Url "http://localhost:8080" -TaskName "DigiDartsServer" -Label "DigiDarts"
+Test-ServiceHealthy -Url "http://localhost:3180" -TaskName "AutodartsDesktop" -Label "Autodarts Board Manager"

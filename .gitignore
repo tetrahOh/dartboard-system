@@ -7,3 +7,5 @@ venv/
 *.npy
 .env
 deploy/windows/*.log
+.claude/
+AutodartsSetup.exe
