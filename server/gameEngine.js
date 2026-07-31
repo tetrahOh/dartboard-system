@@ -50,17 +50,21 @@ const ALL_THROWS = [...Array(20)].flatMap((_, i) => {
 ALL_THROWS.push({ value: 25, label: 'B' }, { value: 50, label: 'DB' });
 ALL_THROWS.sort((a, b) => b.value - a.value);
 
-// Exhaustive search for a <=3-dart double-out checkout. Cheap enough (at
-// most ~22*22 combinations) to run on every state update without caching.
-function findCheckout(score) {
+// Exhaustive search for a double-out checkout using at most maxDarts darts
+// (the number actually left in the current turn - a 3-dart combo suggested
+// with 1 dart left would be impossible to complete). Cheap enough to run on
+// every state update without caching.
+function findCheckout(score, maxDarts) {
   const oneDart = DOUBLES.find((d) => d.value === score);
   if (oneDart) return [oneDart.label];
+  if (maxDarts < 2) return null;
 
   for (const first of ALL_THROWS) {
     if (first.value >= score) continue;
     const finish = DOUBLES.find((d) => d.value === score - first.value);
     if (finish) return [first.label, finish.label];
   }
+  if (maxDarts < 3) return null;
 
   for (const first of ALL_THROWS) {
     if (first.value >= score) continue;
@@ -72,6 +76,14 @@ function findCheckout(score) {
     }
   }
   return null;
+}
+
+// segment: 1-20 (number) | 'BULL' | 'MISS'   multiplier: 1 | 2 | 3
+const VALID_SEGMENTS = new Set([...Array(20)].map((_, i) => i + 1));
+function isValidThrow(segment, multiplier) {
+  const segmentOk = segment === 'BULL' || segment === 'MISS' || VALID_SEGMENTS.has(segment);
+  const multiplierOk = multiplier === 1 || multiplier === 2 || multiplier === 3;
+  return segmentOk && multiplierOk;
 }
 
 class Game {
@@ -94,9 +106,13 @@ class Game {
     this.winnerId = null;
     this.winnerName = null;
     this.log = [];
+    this._turnSeq = 0; // monotonic counter so undo() can find the true last turn even after elimination-caused skips
+    this._roundPlayerCount = null; // 'limit' mode only - fixed at the start of each round, not recomputed mid-round
+    this._processedThrowIds = new Set(); // dedupe retried throws so a lost-response retry can't double-count a dart
 
     this.players = players.map((p) => this._makeCompetitor(p.id, p.name, p.teamId || null, false, p.avatar));
     this.teams = teams && teams.length ? teams.map((t) => this._makeCompetitor(t.id, t.name, null, true)) : null;
+    this._roundPlayerCount = this.players.length; // no one eliminated yet at construction time
 
     if (type === 'killer') this._assignKillerNumbers();
   }
@@ -136,11 +152,16 @@ class Game {
   }
 
   // segment: 1-20 | 'BULL' | 'MISS'   multiplier: 1|2|3
-  throwDart(segment, multiplier) {
+  // throwId: optional client-generated id. A postJSON retry after a lost
+  // response resends the same id, so a duplicate is a no-op instead of
+  // double-counting the dart.
+  throwDart(segment, multiplier, throwId) {
     if (this.status !== 'in_progress') return this.getState();
+    if (throwId !== undefined && this._processedThrowIds.has(throwId)) return this.getState();
     if (this.currentTurnThrows.length >= this.turnLength()) return this.getState();
     if (segment === 'BULL' && multiplier === 3) multiplier = 2; // no triple bull
     if (this.currentTurnThrows.length === 0) this._turnStartSnapshot = this._snapshot();
+    if (throwId !== undefined) this._processedThrowIds.add(throwId);
 
     const value = scoreValue(segment, multiplier);
     const entry = { segment, multiplier, value, label: label(segment, multiplier) };
@@ -340,7 +361,10 @@ class Game {
   _endTurn(bust) {
     const player = this.currentPlayer;
     const total = this.currentTurnThrows.reduce((s, t) => s + t.value, 0);
-    player.history.push({ throws: [...this.currentTurnThrows], total: bust ? 0 : total, bust, startSnapshot: this._turnStartSnapshot });
+    player.history.push({
+      throws: [...this.currentTurnThrows], total: bust ? 0 : total, bust, startSnapshot: this._turnStartSnapshot, seq: this._turnSeq,
+    });
+    this._turnSeq += 1;
     this.currentTurnThrows = [];
     if (this.status !== 'in_progress') return;
 
@@ -360,12 +384,15 @@ class Game {
     }
 
     if (this.type === 'limit') {
-      // round length = active INDIVIDUAL players, not competitors - turns rotate
-      // per-player even in team mode, so a team's active player count matters here,
-      // not the team count itself
-      const activePlayers = this.players.filter((p) => !this.competitorOf(p).eliminated);
+      // Round length is fixed to however many players were active when the round
+      // STARTED, not recomputed every turn - an elimination that happens mid-round
+      // (the eliminated player just took their turn this round) must not shrink
+      // the round retroactively and skip whoever still hasn't gone yet.
       this.turnsThisRound += 1;
-      if (this.turnsThisRound >= activePlayers.length) this.turnsThisRound = 0;
+      if (this.turnsThisRound >= this._roundPlayerCount) {
+        this.turnsThisRound = 0;
+        this._roundPlayerCount = this.players.filter((p) => !this.competitorOf(p).eliminated).length;
+      }
     }
 
     if (this.status === 'in_progress') this.currentPlayerIndex = this._nextActivePlayerIndex();
@@ -424,17 +451,25 @@ class Game {
       this.log.unshift(`Undo: removed ${removed.label}`);
       return this.getState();
     }
-    const prevIndex = (this.currentPlayerIndex - 1 + this.players.length) % this.players.length;
+    // Find whoever's last completed turn has the highest sequence number, rather
+    // than assuming turn order is strictly sequential - eliminated players get
+    // skipped (see _nextActivePlayerIndex), so a naive "previous index" decrement
+    // targets the wrong player once any elimination has happened this game.
+    let prevIndex = -1;
+    let lastSeq = -1;
+    this.players.forEach((p, i) => {
+      const h = p.history[p.history.length - 1];
+      if (h && h.seq > lastSeq) { lastSeq = h.seq; prevIndex = i; }
+    });
+    if (prevIndex === -1) return this.getState();
     const prevPlayer = this.players[prevIndex];
     const lastTurn = prevPlayer.history.pop();
-    if (lastTurn) {
-      this._restore(lastTurn.startSnapshot);
-      this.status = 'in_progress';
-      this.winnerId = null;
-      this.winnerName = null;
-      this.currentPlayerIndex = prevIndex;
-      this.log.unshift(`Undo: reverted ${prevPlayer.name}'s last turn`);
-    }
+    this._restore(lastTurn.startSnapshot);
+    this.status = 'in_progress';
+    this.winnerId = null;
+    this.winnerName = null;
+    this.currentPlayerIndex = prevIndex;
+    this.log.unshift(`Undo: reverted ${prevPlayer.name}'s last turn`);
     return this.getState();
   }
 
@@ -444,6 +479,7 @@ class Game {
       currentLimit: this.currentLimit,
       roundIndex: this.roundIndex,
       turnsThisRound: this.turnsThisRound,
+      roundPlayerCount: this._roundPlayerCount,
     };
   }
 
@@ -456,12 +492,15 @@ class Game {
     this.currentLimit = snapshot.currentLimit;
     this.roundIndex = snapshot.roundIndex;
     this.turnsThisRound = snapshot.turnsThisRound;
+    this._roundPlayerCount = snapshot.roundPlayerCount;
   }
 
   checkoutSuggestion(score) {
     if (score > 170 || score < 2) return null;
     if (!this.doubleOut) return null;
-    return findCheckout(score);
+    const dartsLeft = this.turnLength() - this.currentTurnThrows.length;
+    if (dartsLeft <= 0) return null;
+    return findCheckout(score, dartsLeft);
   }
 
   _roundLabel() {
@@ -521,4 +560,4 @@ class Game {
   }
 }
 
-module.exports = { Game, scoreValue, label, AROUND_THE_CLOCK_SEQUENCE, HALVE_IT_ROUNDS };
+module.exports = { Game, scoreValue, label, isValidThrow, AROUND_THE_CLOCK_SEQUENCE, HALVE_IT_ROUNDS };

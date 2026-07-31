@@ -3,7 +3,14 @@ const http = require('http');
 const os = require('os');
 const { WebSocketServer } = require('ws');
 const path = require('path');
-const { Game } = require('./gameEngine');
+const { Game, isValidThrow } = require('./gameEngine');
+
+function parseBool(value, fallback) {
+  if (typeof value === 'boolean') return value;
+  if (value === 'false') return false;
+  if (value === 'true') return true;
+  return fallback;
+}
 
 const app = express();
 app.use(express.json());
@@ -19,7 +26,7 @@ function broadcast(gameId) {
   if (!game) return;
   const payload = JSON.stringify({ type: 'state', game: game.getState() });
   wss.clients.forEach((client) => {
-    if (client.readyState === 1) client.send(payload);
+    if (client.readyState === 1 && client.gameId === gameId) client.send(payload);
   });
 }
 
@@ -31,7 +38,7 @@ app.post('/api/game', (req, res) => {
   const game = new Game({
     type: type || 'x01',
     startScore: startScore || 501,
-    doubleOut: doubleOut !== false,
+    doubleOut: parseBool(doubleOut, true),
     legsToWin: legsToWin || 1,
     livesStart: livesStart || 3,
     teams: teams && teams.length ? teams : null,
@@ -53,8 +60,11 @@ app.get('/api/game/:id', (req, res) => {
 app.post('/api/game/:id/throw', (req, res) => {
   const game = games.get(req.params.id);
   if (!game) return res.status(404).json({ error: 'not found' });
-  const { segment, multiplier } = req.body;
-  const state = game.throwDart(segment, multiplier);
+  const { segment, multiplier, throwId } = req.body;
+  if (!isValidThrow(segment, multiplier)) {
+    return res.status(400).json({ error: 'invalid throw: segment must be 1-20, "BULL", or "MISS"; multiplier must be 1, 2, or 3' });
+  }
+  const state = game.throwDart(segment, multiplier, throwId);
   broadcast(game.id);
   res.json(state);
 });
@@ -67,11 +77,19 @@ app.post('/api/game/:id/undo', (req, res) => {
   res.json(state);
 });
 
+// Called by the client on "End game"/"New game" so finished games don't sit
+// in memory forever - see server.js's `games` Map.
+app.delete('/api/game/:id', (req, res) => {
+  games.delete(req.params.id);
+  res.json({ ok: true });
+});
+
 wss.on('connection', (ws) => {
   ws.on('message', (raw) => {
     try {
       const msg = JSON.parse(raw);
       if (msg.type === 'subscribe' && games.has(msg.gameId)) {
+        ws.gameId = msg.gameId;
         ws.send(JSON.stringify({ type: 'state', game: games.get(msg.gameId).getState() }));
       }
     } catch (e) { /* ignore malformed messages */ }

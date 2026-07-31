@@ -347,11 +347,32 @@
   document.getElementById('undo-btn').addEventListener('click', async () => {
     render(await postJSON(`/api/game/${gameId}/undo`));
   });
-  document.getElementById('end-game-btn').addEventListener('click', () => location.reload());
-  document.getElementById('new-game-btn').addEventListener('click', () => location.reload());
+  document.getElementById('end-game-btn').addEventListener('click', endGame);
+  document.getElementById('new-game-btn').addEventListener('click', endGame);
 
-  async function sendThrow(segment, multiplier) {
-    render(await postJSON(`/api/game/${gameId}/throw`, { segment, multiplier }));
+  async function endGame() {
+    if (gameId) {
+      try { await fetch(`/api/game/${gameId}`, { method: 'DELETE' }); } catch (e) { /* best-effort cleanup */ }
+    }
+    location.reload();
+  }
+
+  function makeThrowId() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  // Throws are sent one at a time, each waiting for the previous request to
+  // fully resolve (including its retries) before the next is sent - without
+  // this, several darts thrown while offline could each retry independently
+  // and land at the server in a different order than they were thrown.
+  let throwQueue = Promise.resolve();
+
+  function sendThrow(segment, multiplier) {
+    const throwId = makeThrowId();
+    throwQueue = throwQueue
+      .then(() => postJSON(`/api/game/${gameId}/throw`, { segment, multiplier, throwId }))
+      .then((state) => render(state));
+    return throwQueue;
   }
 
   // Retries indefinitely on network failure or a non-OK response, showing a
