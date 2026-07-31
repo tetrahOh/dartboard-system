@@ -13,7 +13,10 @@ function parseBool(value, fallback) {
 }
 
 const app = express();
-app.use(express.json());
+// Default 100kb is too small once a few players have photo avatars embedded
+// in the game-creation payload (each is a compressed ~160x160 JPEG, but
+// several together can still add up past the default).
+app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const server = http.createServer(app);

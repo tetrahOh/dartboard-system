@@ -20,6 +20,64 @@
   let teams = [];
   let avatarPickerOpenFor = null;
 
+  // ---------- Photo avatars ----------
+  // Only ever produced by resizeToAvatarPhoto() below, but validated again
+  // here anyway before ever being interpolated into innerHTML - a
+  // well-formed base64 data URL can't contain the characters needed to
+  // break out of an HTML attribute, so this check is what makes that safe.
+  function isPhotoAvatar(avatar) {
+    return typeof avatar === 'string' && /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/.test(avatar);
+  }
+  function avatarInnerHtml(avatar, fallback) {
+    if (isPhotoAvatar(avatar)) return `<img class="avatar-img" src="${avatar}" alt="">`;
+    return avatar || fallback || '🎯';
+  }
+
+  // Center-crops to a square and downsizes before encoding, since the full
+  // game state (including every player's avatar) gets rebroadcast over the
+  // WebSocket on every single dart thrown - an uncompressed photo there
+  // would multiply that traffic a lot for no visible benefit at avatar size.
+  function resizeToAvatarPhoto(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error);
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('invalid image'));
+        img.onload = () => {
+          const size = 160;
+          const side = Math.min(img.width, img.height);
+          const sx = (img.width - side) / 2;
+          const sy = (img.height - side) / 2;
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          canvas.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, size, size);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  let avatarPhotoTargetId = null;
+  const avatarPhotoInput = document.getElementById('avatar-photo-input');
+  avatarPhotoInput.addEventListener('change', async () => {
+    const file = avatarPhotoInput.files[0];
+    avatarPhotoInput.value = ''; // reset so picking the same file again still fires 'change'
+    if (!file || !avatarPhotoTargetId) return;
+    try {
+      const dataUrl = await resizeToAvatarPhoto(file);
+      const target = players.find((p) => p.id === avatarPhotoTargetId);
+      if (target) {
+        target.avatar = dataUrl;
+        avatarPickerOpenFor = null;
+        renderPlayerRows();
+      }
+    } catch (e) { /* unreadable/invalid file - leave the picker open so they can retry */ }
+  });
+
   const LEGS_MODES = new Set(['x01', 'cricket']);
   const LIVES_MODES = new Set(['killer', 'limit']);
 
@@ -127,7 +185,7 @@
       const avatarBtn = document.createElement('button');
       avatarBtn.type = 'button';
       avatarBtn.className = 'avatar-btn';
-      avatarBtn.textContent = p.avatar;
+      avatarBtn.innerHTML = avatarInnerHtml(p.avatar);
       avatarBtn.setAttribute('aria-label', 'Choose avatar');
       avatarBtn.addEventListener('click', () => {
         avatarPickerOpenFor = avatarPickerOpenFor === p.id ? null : p.id;
@@ -170,6 +228,18 @@
       if (avatarPickerOpenFor === p.id) {
         const picker = document.createElement('div');
         picker.className = 'avatar-picker';
+
+        const photoOpt = document.createElement('button');
+        photoOpt.type = 'button';
+        photoOpt.className = 'avatar-option avatar-option-photo' + (isPhotoAvatar(p.avatar) ? ' active' : '');
+        photoOpt.textContent = '📷';
+        photoOpt.setAttribute('aria-label', 'Take or choose a photo');
+        photoOpt.addEventListener('click', () => {
+          avatarPhotoTargetId = p.id;
+          avatarPhotoInput.click();
+        });
+        picker.appendChild(photoOpt);
+
         AVATARS.forEach((a) => {
           const opt = document.createElement('button');
           opt.type = 'button';
@@ -425,8 +495,8 @@
       const isTurn = c.id === state.currentCompetitorId && state.status === 'in_progress';
       card.className = 'player-card' + (isTurn ? ' turn' : '') + (c.eliminated ? ' eliminated' : '');
       const avatar = c.isTeam
-        ? `<div class="avatar-display team-avatars">${(c.memberAvatars || []).map((a) => a || '🎯').join('')}</div>`
-        : `<div class="avatar-display">${c.avatar || '🎯'}</div>`;
+        ? `<div class="avatar-display team-avatars">${(c.memberAvatars || []).map((a) => avatarInnerHtml(a, '🎯')).join('')}</div>`
+        : `<div class="avatar-display">${avatarInnerHtml(c.avatar, '🎯')}</div>`;
       const members = c.isTeam && c.memberNames ? `<div class="members">${c.memberNames.join(' · ')}</div>` : '';
       const legsPips = LEGS_MODES.has(state.type) && state.legsToWin > 1
         ? `<div class="legs">${'●'.repeat(c.legsWon)}${'○'.repeat(Math.max(0, state.legsToWin - c.legsWon))}</div>` : '';
