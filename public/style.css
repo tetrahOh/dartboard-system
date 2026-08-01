@@ -552,6 +552,18 @@ body {
 .checkout-hint { background: var(--lime-fill); }
 .limit-hint { background: var(--orange-fill); }
 
+.sl-board-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  padding: 0.6rem;
+  background: var(--cream);
+  border: 3px solid var(--wood-mid);
+  border-radius: 16px;
+  box-shadow: 0 4px 0 var(--wood-dark);
+}
+#sl-board-svg { width: min(92vw, 480px); height: auto; }
+
 .board-wrap { display: flex; justify-content: center; }
 #board-svg { width: min(92vw, 560px); height: auto; touch-action: manipulation; }
 

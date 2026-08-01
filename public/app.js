@@ -508,6 +508,95 @@
     return `<div class="sl-track"><div class="sl-fill" style="width:${pct}%"></div></div>`;
   }
 
+  // ---------- Snakes & Ladders board ----------
+  // Same colors as the player-card rotation (style.css's -fill palette) so a
+  // token on the board and that player's scoreboard card read as the same
+  // person at a glance.
+  const SL_TOKEN_COLORS = ['#c2126f', '#b5490f', '#7645d6', '#158080', '#3d7a1f', '#8f6000'];
+  const SL_CELL = 56;
+
+  // Classic boustrophedon (back-and-forth) numbering: square 1 is bottom-left,
+  // row 0 runs left-to-right, row 1 right-to-left, alternating up the board -
+  // same layout as a real Snakes & Ladders board, so it reads as familiar.
+  function slSquareToXY(n) {
+    const row = Math.floor((n - 1) / 10);
+    const posInRow = (n - 1) % 10;
+    const col = row % 2 === 0 ? posInRow : 9 - posInRow;
+    const gridY = 9 - row;
+    return { x: col * SL_CELL + SL_CELL / 2, y: gridY * SL_CELL + SL_CELL / 2 };
+  }
+
+  function renderSnakesAndLaddersBoard(state) {
+    const wrap = document.getElementById('sl-board-wrap');
+    if (state.type !== 'snakes_and_ladders' || !state.snakesAndLaddersBoard) {
+      wrap.classList.add('hidden');
+      return;
+    }
+    wrap.classList.remove('hidden');
+    const boardInfo = state.snakesAndLaddersBoard;
+    const size = SL_CELL * 10;
+    let svg = `<rect x="0" y="0" width="${size}" height="${size}" fill="none" />`;
+
+    for (let n = 1; n <= 100; n += 1) {
+      const { x, y } = slSquareToXY(n);
+      const row = Math.floor((n - 1) / 10);
+      const posInRow = (n - 1) % 10;
+      const col = row % 2 === 0 ? posInRow : 9 - posInRow;
+      const shaded = (row + col) % 2 === 0;
+      svg += `<rect x="${x - SL_CELL / 2}" y="${y - SL_CELL / 2}" width="${SL_CELL}" height="${SL_CELL}" fill="${shaded ? 'rgba(74,47,28,0.06)' : 'transparent'}" stroke="rgba(74,47,28,0.18)" />`;
+      svg += `<text x="${x - SL_CELL / 2 + 5}" y="${y - SL_CELL / 2 + 15}" font-size="10" fill="rgba(74,47,28,0.55)">${n}</text>`;
+    }
+
+    Object.entries(boardInfo.ladders).forEach(([bottom, top]) => {
+      const b = slSquareToXY(Number(bottom));
+      const t = slSquareToXY(Number(top));
+      svg += `<line x1="${b.x}" y1="${b.y}" x2="${t.x}" y2="${t.y}" stroke="#4a2f1c" stroke-width="6" stroke-linecap="round" opacity="0.85" />`;
+      const dx = t.x - b.x;
+      const dy = t.y - b.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = (-dy / len) * 7;
+      const ny = (dx / len) * 7;
+      for (let i = 1; i < 4; i += 1) {
+        const rx = b.x + dx * (i / 4);
+        const ry = b.y + dy * (i / 4);
+        svg += `<line x1="${rx - nx}" y1="${ry - ny}" x2="${rx + nx}" y2="${ry + ny}" stroke="#4a2f1c" stroke-width="3" />`;
+      }
+    });
+
+    Object.entries(boardInfo.snakes).forEach(([head, tail]) => {
+      const h = slSquareToXY(Number(head));
+      const t = slSquareToXY(Number(tail));
+      const mx = (h.x + t.x) / 2 + (h.y - t.y) * 0.25;
+      const my = (h.y + t.y) / 2 + (t.x - h.x) * 0.25;
+      svg += `<path d="M ${h.x} ${h.y} Q ${mx} ${my} ${t.x} ${t.y}" stroke="#8b1e1e" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.85" />`;
+      svg += `<circle cx="${h.x}" cy="${h.y}" r="9" fill="#8b1e1e" />`;
+    });
+
+    const competitors = state.teams && state.teams.length ? state.teams : state.players;
+    const bySquare = {};
+    competitors.forEach((c) => {
+      const sq = Math.min(boardInfo.size, Math.max(1, c.score || 1));
+      (bySquare[sq] = bySquare[sq] || []).push(c);
+    });
+    Object.entries(bySquare).forEach(([sq, group]) => {
+      const { x, y } = slSquareToXY(Number(sq));
+      group.forEach((c, i) => {
+        const idx = competitors.indexOf(c);
+        const angle = (i / group.length) * Math.PI * 2;
+        const r = group.length > 1 ? SL_CELL * 0.22 : 0;
+        const tx = x + Math.cos(angle) * r;
+        const ty = y + Math.sin(angle) * r;
+        const initial = escapeHtml((c.name || '?').trim().charAt(0).toUpperCase() || '?');
+        svg += `<circle cx="${tx}" cy="${ty}" r="12" fill="${SL_TOKEN_COLORS[idx % SL_TOKEN_COLORS.length]}" stroke="#fff" stroke-width="2" />`;
+        svg += `<text x="${tx}" y="${ty + 4}" font-size="12" font-weight="800" text-anchor="middle" fill="#fff">${initial}</text>`;
+      });
+    });
+
+    const svgEl = document.getElementById('sl-board-svg');
+    svgEl.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    svgEl.innerHTML = svg;
+  }
+
   function competitorBadges(state, c) {
     const badges = [];
     if (state.type === 'killer') {
@@ -568,6 +657,8 @@
     } else {
       limitHint.textContent = '';
     }
+
+    renderSnakesAndLaddersBoard(state);
 
     const logPanel = document.getElementById('log-panel');
     logPanel.innerHTML = state.log.map((l) => `<div>${escapeHtml(l)}</div>`).join('');
