@@ -36,8 +36,11 @@ const LEG_BASED_TYPES = new Set(['x01', 'cricket']);
 // double-out. Board layout chosen so no ladder-top/snake-tail is itself
 // another ladder-bottom/snake-head, so a single dart can never chain.
 const SNAKES_AND_LADDERS_BOARD_SIZE = 100;
-const SNAKES_AND_LADDERS_LADDERS = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91 };
-const SNAKES_AND_LADDERS_SNAKES = { 17: 7, 54: 34, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 79 };
+// The 9->96 ladder and 99->3 snake are the "big" pair spanning almost the
+// whole board - one huge early skip toward the finish, one huge late fall
+// back near the start, for real late-game tension.
+const SNAKES_AND_LADDERS_LADDERS = { 1: 38, 4: 14, 9: 96, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91 };
+const SNAKES_AND_LADDERS_SNAKES = { 17: 7, 54: 34, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 79, 99: 3 };
 
 function scoreValue(segment, multiplier) {
   if (segment === 'BULL') return multiplier === 2 ? 50 : 25; // inner bull = 2x outer
