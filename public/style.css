@@ -554,7 +554,7 @@ body {
 .checkout-hint { background: var(--lime-fill); }
 .limit-hint { background: var(--orange-fill); }
 
-.sl-board-wrap {
+.sl-board-wrap, .dr-board-wrap {
   display: flex;
   justify-content: center;
   margin-bottom: 0.75rem;
@@ -565,6 +565,7 @@ body {
   box-shadow: 0 4px 0 var(--wood-dark);
 }
 #sl-board-svg { width: min(92vw, 480px); height: auto; }
+#dr-board-svg { width: min(92vw, 520px); height: auto; }
 
 .board-wrap { display: flex; justify-content: center; }
 #board-svg { width: min(92vw, 560px); height: auto; touch-action: manipulation; }

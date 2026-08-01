@@ -67,6 +67,21 @@ function snakesAndLaddersDiceValue(segment, multiplier, ring) {
   return 1;
 }
 
+// Donkey Race: not a real-world dart game, invented for this app. Unlike
+// Snakes & Ladders, movement here scales directly with the multiplier -
+// hitting doubles/trebles genuinely matters for distance, per the actual
+// request this was built from - rather than flattening everything to a
+// 1-6 dice range. Bull is scored at the same tier as the nearest numbered
+// multiplier (outer bull ~ double, inner bull ~ treble) since it's roughly
+// that hard to hit. No "exact landing" requirement, unlike Snakes &
+// Ladders - first to cross the finish line wins, same as a real race.
+const DONKEY_RACE_TRACK_LENGTH = 30;
+function donkeyRaceMove(segment, multiplier) {
+  if (segment === 'MISS') return 0;
+  if (segment === 'BULL') return multiplier === 2 ? 3 : 2;
+  return multiplier;
+}
+
 function scoreValue(segment, multiplier) {
   if (segment === 'BULL') return multiplier === 2 ? 50 : 25; // inner bull = 2x outer
   if (segment === 'MISS') return 0;
@@ -230,6 +245,7 @@ class Game {
       case 'halve_it': return this._applyHalveIt(entry);
       case 'limit': return this._applyLimit(entry);
       case 'snakes_and_ladders': return this._applySnakesAndLadders(entry);
+      case 'donkey_race': return this._applyDonkeyRace(entry);
       default: return undefined;
     }
   }
@@ -420,6 +436,21 @@ class Game {
     }
     if (scorer.score === SNAKES_AND_LADDERS_BOARD_SIZE) {
       this._declareWinner(scorer, `${player.name} reaches ${SNAKES_AND_LADDERS_BOARD_SIZE} and wins!`);
+    }
+  }
+
+  _applyDonkeyRace(entry) {
+    const player = this.currentPlayer;
+    const scorer = this.currentCompetitor;
+    const move = donkeyRaceMove(entry.segment, entry.multiplier);
+    scorer.score = Math.min(DONKEY_RACE_TRACK_LENGTH, scorer.score + move);
+    if (move > 0) {
+      this.log.unshift(`${player.name} throws ${entry.label} — moves ${move} (now at ${scorer.score}/${DONKEY_RACE_TRACK_LENGTH})`);
+    } else {
+      this.log.unshift(`${player.name} throws ${entry.label} (no movement)`);
+    }
+    if (scorer.score >= DONKEY_RACE_TRACK_LENGTH) {
+      this._declareWinner(scorer, `${player.name} crosses the finish line and wins the race!`);
     }
   }
 
@@ -630,6 +661,7 @@ class Game {
       snakesAndLaddersBoard: this.type === 'snakes_and_ladders'
         ? { size: SNAKES_AND_LADDERS_BOARD_SIZE, ladders: SNAKES_AND_LADDERS_LADDERS, snakes: SNAKES_AND_LADDERS_SNAKES }
         : null,
+      donkeyRaceTrackLength: this.type === 'donkey_race' ? DONKEY_RACE_TRACK_LENGTH : null,
     };
   }
 }

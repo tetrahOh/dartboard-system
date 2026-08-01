@@ -108,6 +108,7 @@
     around_the_clock: 'How to play Around the Clock', killer: 'How to play Killer',
     shanghai: 'How to play Shanghai', halve_it: 'How to play Halve It', limit: 'How to play Limit',
     snakes_and_ladders: 'How to play Snakes & Ladders', tower_collapse: 'How to play Tower Collapse',
+    donkey_race: 'How to play Donkey Race',
   };
   const TUTORIALS = {
     x01: [
@@ -163,6 +164,12 @@
       { icon: '🎯', text: 'Throw 3 darts a turn', example: 'T20 = -60 points' },
       { icon: '🔢', text: 'Watch your tower shrink toward zero' },
       { icon: '✅', text: 'Your last dart must be a DOUBLE', example: 'D20 finishes 40', bad: 'Go below 0, or land on 1 — BUST' },
+    ],
+    donkey_race: [
+      { icon: '🎯', text: 'Every dart moves your donkey forward', example: 'Single = 1, Double = 2, Treble = 3' },
+      { icon: '🎪', text: 'Bullseye counts too', example: 'Outer bull = 2, inner bull = 3' },
+      { icon: '❌', text: 'Miss and you stay put' },
+      { icon: '🏁', text: 'First past the finish line wins!' },
     ],
   };
 
@@ -512,6 +519,7 @@
     if (state.type === 'around_the_clock') return c.target === 'BULL' ? 'B' : c.target;
     if (state.type === 'killer' || state.type === 'limit') return c.lives;
     if (state.type === 'snakes_and_ladders') return `${c.score}/${state.snakesAndLaddersBoard ? state.snakesAndLaddersBoard.size : 100}`;
+    if (state.type === 'donkey_race') return `${c.score}/${state.donkeyRaceTrackLength || 30}`;
     return c.score;
   }
 
@@ -625,6 +633,45 @@
     svgEl.innerHTML = svg;
   }
 
+  // ---------- Donkey Race board ----------
+  function renderDonkeyRaceBoard(state) {
+    const wrap = document.getElementById('dr-board-wrap');
+    if (state.type !== 'donkey_race') {
+      wrap.classList.add('hidden');
+      return;
+    }
+    wrap.classList.remove('hidden');
+    const trackLength = state.donkeyRaceTrackLength || 30;
+    const competitors = state.teams && state.teams.length ? state.teams : state.players;
+    const width = 560;
+    const height = Math.max(160, competitors.length * 52);
+    const marginLeft = 46;
+    const marginRight = 46;
+    const trackWidth = width - marginLeft - marginRight;
+    const laneH = height / competitors.length;
+
+    let svg = '';
+    competitors.forEach((c, idx) => {
+      const laneY = idx * laneH;
+      svg += `<rect x="0" y="${laneY}" width="${width}" height="${laneH}" fill="${idx % 2 === 0 ? 'rgba(74,47,28,0.04)' : 'transparent'}" />`;
+      svg += `<line x1="${marginLeft}" y1="${laneY}" x2="${marginLeft}" y2="${laneY + laneH}" stroke="rgba(74,47,28,0.3)" stroke-width="2" />`;
+      svg += `<line x1="${width - marginRight}" y1="${laneY}" x2="${width - marginRight}" y2="${laneY + laneH}" stroke="#8b1e1e" stroke-width="3" stroke-dasharray="4,3" />`;
+
+      const pct = Math.min(1, (c.score || 0) / trackLength);
+      const tx = marginLeft + pct * trackWidth;
+      const ty = laneY + laneH / 2;
+      const color = PLAYER_TOKEN_COLORS[idx % PLAYER_TOKEN_COLORS.length];
+      svg += `<circle cx="${tx}" cy="${ty}" r="16" fill="${color}" stroke="#fff" stroke-width="2" />`;
+      svg += `<text x="${tx}" y="${ty + 6}" font-size="16" text-anchor="middle">🐴</text>`;
+      const nameLabel = escapeHtml((c.name || '?').length > 12 ? `${c.name.slice(0, 11)}…` : (c.name || '?'));
+      svg += `<text x="${marginLeft - 8}" y="${ty + 4}" font-size="11" font-weight="800" text-anchor="end" fill="var(--wood-dark)">${nameLabel}</text>`;
+    });
+
+    const svgEl = document.getElementById('dr-board-svg');
+    svgEl.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    svgEl.innerHTML = svg;
+  }
+
   function competitorBadges(state, c) {
     const badges = [];
     if (state.type === 'killer') {
@@ -688,6 +735,7 @@
     }
 
     renderSnakesAndLaddersBoard(state);
+    renderDonkeyRaceBoard(state);
 
     const logPanel = document.getElementById('log-panel');
     logPanel.innerHTML = state.log.map((l) => `<div>${escapeHtml(l)}</div>`).join('');
