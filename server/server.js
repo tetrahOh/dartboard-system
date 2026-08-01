@@ -12,6 +12,44 @@ function parseBool(value, fallback) {
   return fallback;
 }
 
+// Capped above the UI's 10-player limit (which only the client enforces) so
+// a direct API call can't push past the dartboard's 20-number pool - beyond
+// that, Killer's number assignment starts reusing numbers between players,
+// silently misdirecting hits (gameEngine.js's _assignKillerNumbers).
+const MAX_PLAYERS = 20;
+
+// Called before a game is constructed/stored - server.js used to let a bad
+// teamId reach Game/getState() and throw mid-request, by which point the
+// broken game was already in the `games` Map with no id the client ever
+// received back, i.e. a permanently stuck entry. Reject up front instead.
+function gameSetupError(body) {
+  const { players, teams } = body;
+  if (players !== undefined) {
+    if (!Array.isArray(players) || players.length === 0) return 'players must be a non-empty array';
+    if (players.length > MAX_PLAYERS) return `players cannot exceed ${MAX_PLAYERS}`;
+    for (const p of players) {
+      if (!p || typeof p.id !== 'string' || typeof p.name !== 'string' || !p.name.trim()) {
+        return 'each player needs a string id and a non-empty string name';
+      }
+    }
+  }
+  if (teams !== undefined && teams !== null) {
+    if (!Array.isArray(teams)) return 'teams must be an array';
+    for (const t of teams) {
+      if (!t || typeof t.id !== 'string' || typeof t.name !== 'string') return 'each team needs a string id and name';
+    }
+  }
+  if (Array.isArray(players) && Array.isArray(teams) && teams.length) {
+    const teamIds = new Set(teams.map((t) => t.id));
+    for (const p of players) {
+      if (p.teamId !== undefined && p.teamId !== null && !teamIds.has(p.teamId)) {
+        return `player ${p.id} has a teamId that doesn't match any team`;
+      }
+    }
+  }
+  return null;
+}
+
 const app = express();
 // Default 100kb is too small once a few players have photo avatars embedded
 // in the game-creation payload (each is a compressed ~160x160 JPEG, but
@@ -38,6 +76,8 @@ function broadcast(gameId) {
 // Create a new game
 app.post('/api/game', (req, res) => {
   const { type, startScore, doubleOut, players, legsToWin, teams, livesStart } = req.body;
+  const setupError = gameSetupError(req.body);
+  if (setupError) return res.status(400).json({ error: setupError });
   const game = new Game({
     type: type || 'x01',
     startScore: startScore || 501,

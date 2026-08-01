@@ -20,6 +20,16 @@
   let teams = [];
   let avatarPickerOpenFor = null;
 
+  // Every value here (player names, avatar fallback text, log lines) can
+  // originate from another device hitting the API directly - the client's
+  // own inputs aren't the only way data gets in. Anything not already known
+  // to be safe markup gets run through this before going into innerHTML.
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
   // ---------- Photo avatars ----------
   // Only ever produced by resizeToAvatarPhoto() below, but validated again
   // here anyway before ever being interpolated into innerHTML - a
@@ -30,7 +40,7 @@
   }
   function avatarInnerHtml(avatar, fallback) {
     if (isPhotoAvatar(avatar)) return `<img class="avatar-img" src="${avatar}" alt="">`;
-    return avatar || fallback || '🎯';
+    return escapeHtml(avatar || fallback || '🎯');
   }
 
   // Fits the whole photo into a square canvas (letterboxed, not cropped) and
@@ -287,9 +297,15 @@
     el.classList.add('active');
     mode = { type: el.dataset.mode, startScore: el.dataset.score ? Number(el.dataset.score) : undefined };
 
-    document.getElementById('x01-options').classList.toggle('hidden', mode.type !== 'x01');
-    document.getElementById('legs-card').classList.toggle('hidden', !LEGS_MODES.has(mode.type));
-    document.getElementById('lives-card').classList.toggle('hidden', !LIVES_MODES.has(mode.type));
+    const showX01 = mode.type === 'x01';
+    const showLegs = LEGS_MODES.has(mode.type);
+    const showLives = LIVES_MODES.has(mode.type);
+    document.getElementById('x01-options').classList.toggle('hidden', !showX01);
+    document.getElementById('legs-card').classList.toggle('hidden', !showLegs);
+    document.getElementById('lives-card').classList.toggle('hidden', !showLives);
+    // Modes with none of the three (Around the Clock, Shanghai, Halve It) would
+    // otherwise leave this wrapper card visible but empty - a floating box.
+    document.getElementById('rules-card').classList.toggle('hidden', !showX01 && !showLegs && !showLives);
   });
 
   document.getElementById('x01-options').addEventListener('click', (e) => {
@@ -501,12 +517,12 @@
       const avatar = c.isTeam
         ? `<div class="avatar-display team-avatars">${(c.memberAvatars || []).map((a) => avatarInnerHtml(a, '🎯')).join('')}</div>`
         : `<div class="avatar-display">${avatarInnerHtml(c.avatar, '🎯')}</div>`;
-      const members = c.isTeam && c.memberNames ? `<div class="members">${c.memberNames.join(' · ')}</div>` : '';
+      const members = c.isTeam && c.memberNames ? `<div class="members">${c.memberNames.map(escapeHtml).join(' · ')}</div>` : '';
       const legsPips = LEGS_MODES.has(state.type) && state.legsToWin > 1
         ? `<div class="legs">${'●'.repeat(c.legsWon)}${'○'.repeat(Math.max(0, state.legsToWin - c.legsWon))}</div>` : '';
       const livesBadge = (state.type === 'killer' || state.type === 'limit') ? `<span class="badge lives">${c.lives} ♥</span>` : '';
       card.innerHTML = `${avatar}
-                         <div class="name">${c.name}</div>
+                         <div class="name">${escapeHtml(c.name)}</div>
                          ${members}
                          <div class="score">${competitorStat(state, c)}</div>
                          ${legsPips}
@@ -539,7 +555,7 @@
     }
 
     const logPanel = document.getElementById('log-panel');
-    logPanel.innerHTML = state.log.map((l) => `<div>${l}</div>`).join('');
+    logPanel.innerHTML = state.log.map((l) => `<div>${escapeHtml(l)}</div>`).join('');
 
     const winnerBanner = document.getElementById('winner-banner');
     if (state.status === 'game_won') {

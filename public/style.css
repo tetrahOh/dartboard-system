@@ -498,6 +498,13 @@ body {
   background: rgba(0, 0, 0, 0.28);
   color: #fff;
 }
+/* Distinct accent border per badge type - kept as a dark scrim + white text
+   (not colored text) since these sit on top of 6 different rotating
+   player-card colors and colored text was the exact thing that failed
+   contrast checks elsewhere in this file. */
+.badge.lives { border-color: var(--pink); }
+.badge.killer { border-color: var(--orange); }
+.badge.target { border-color: var(--cyan); }
 
 .turn-strip {
   display: flex;
