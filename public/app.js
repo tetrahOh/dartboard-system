@@ -438,7 +438,7 @@
   // ---------- Throw input ----------
   document.addEventListener('dart-segment', async (e) => {
     if (!gameId) return;
-    await sendThrow(e.detail.segment, e.detail.multiplier);
+    await sendThrow(e.detail.segment, e.detail.multiplier, e.detail.ring);
   });
   document.getElementById('miss-btn').addEventListener('click', () => sendThrow('MISS', 1));
   document.getElementById('undo-btn').addEventListener('click', async () => {
@@ -464,10 +464,10 @@
   // and land at the server in a different order than they were thrown.
   let throwQueue = Promise.resolve();
 
-  function sendThrow(segment, multiplier) {
+  function sendThrow(segment, multiplier, ring) {
     const throwId = makeThrowId();
     throwQueue = throwQueue
-      .then(() => postJSON(`/api/game/${gameId}/throw`, { segment, multiplier, throwId }))
+      .then(() => postJSON(`/api/game/${gameId}/throw`, { segment, multiplier, throwId, ring }))
       .then((state) => render(state));
     return throwQueue;
   }

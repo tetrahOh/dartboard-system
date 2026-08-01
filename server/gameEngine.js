@@ -42,6 +42,26 @@ const SNAKES_AND_LADDERS_BOARD_SIZE = 100;
 const SNAKES_AND_LADDERS_LADDERS = { 1: 38, 4: 14, 9: 96, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91 };
 const SNAKES_AND_LADDERS_SNAKES = { 17: 7, 54: 34, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 79, 99: 3 };
 
+// Movement is a 1-6 dice-style value based on WHICH of the 6 real dartboard
+// zones was hit, not the number - using the raw dart score (up to 60 for a
+// treble) would let a single lucky treble skip most of the board. Ordered
+// roughly by real difficulty: the two single zones (biggest, easiest targets)
+// are worth least, the two bull zones (smallest, hardest) worth most.
+const SNAKES_AND_LADDERS_RING_VALUES = {
+  'outer-single': 1, 'inner-single': 2, double: 3, treble: 4, 'outer-bull': 5, 'inner-bull': 6,
+};
+function snakesAndLaddersDiceValue(segment, multiplier, ring) {
+  if (segment === 'MISS') return 0;
+  if (SNAKES_AND_LADDERS_RING_VALUES[ring] !== undefined) return SNAKES_AND_LADDERS_RING_VALUES[ring];
+  // Fallback when no ring hint arrives (e.g. the camera-detection bridge,
+  // which only ever sends segment+multiplier) - derive the best guess from
+  // multiplier alone, defaulting ambiguous "single" to the more common outer one.
+  if (segment === 'BULL') return multiplier === 2 ? 6 : 5;
+  if (multiplier === 3) return 4;
+  if (multiplier === 2) return 3;
+  return 1;
+}
+
 function scoreValue(segment, multiplier) {
   if (segment === 'BULL') return multiplier === 2 ? 50 : 25; // inner bull = 2x outer
   if (segment === 'MISS') return 0;
@@ -171,7 +191,11 @@ class Game {
   // throwId: optional client-generated id. A postJSON retry after a lost
   // response resends the same id, so a duplicate is a no-op instead of
   // double-counting the dart.
-  throwDart(segment, multiplier, throwId) {
+  // ring: optional zone hint ('inner-single'|'outer-single'|'treble'|'double'
+  // |'outer-bull'|'inner-bull') - only used by Snakes & Ladders to derive a
+  // 1-6 dice-like movement value; every other mode's scoring is unaffected
+  // and ignores it entirely.
+  throwDart(segment, multiplier, throwId, ring) {
     if (this.status !== 'in_progress') return this.getState();
     if (throwId !== undefined && this._processedThrowIds.has(throwId)) return this.getState();
     if (this.currentTurnThrows.length >= this.turnLength()) return this.getState();
@@ -180,7 +204,7 @@ class Game {
     if (throwId !== undefined) this._processedThrowIds.add(throwId);
 
     const value = scoreValue(segment, multiplier);
-    const entry = { segment, multiplier, value, label: label(segment, multiplier) };
+    const entry = { segment, multiplier, value, label: label(segment, multiplier), ring };
     this.currentTurnThrows.push(entry);
     this._dispatch(entry);
 
@@ -372,20 +396,21 @@ class Game {
   _applySnakesAndLadders(entry) {
     const player = this.currentPlayer;
     const scorer = this.currentCompetitor;
-    const newPos = scorer.score + entry.value;
+    const roll = snakesAndLaddersDiceValue(entry.segment, entry.multiplier, entry.ring);
+    const newPos = scorer.score + roll;
     if (newPos > SNAKES_AND_LADDERS_BOARD_SIZE) {
-      this.log.unshift(`${player.name} throws ${entry.label} — overshoots ${SNAKES_AND_LADDERS_BOARD_SIZE}, stays on ${scorer.score}`);
+      this.log.unshift(`${player.name} throws ${entry.label} (rolls a ${roll}) — overshoots ${SNAKES_AND_LADDERS_BOARD_SIZE}, stays on ${scorer.score}`);
       return;
     }
     scorer.score = newPos;
     if (SNAKES_AND_LADDERS_LADDERS[newPos] !== undefined) {
       scorer.score = SNAKES_AND_LADDERS_LADDERS[newPos];
-      this.log.unshift(`${player.name} throws ${entry.label}, lands on ${newPos} — climbs a ladder to ${scorer.score}!`);
+      this.log.unshift(`${player.name} throws ${entry.label} (rolls a ${roll}), lands on ${newPos} — climbs a ladder to ${scorer.score}!`);
     } else if (SNAKES_AND_LADDERS_SNAKES[newPos] !== undefined) {
       scorer.score = SNAKES_AND_LADDERS_SNAKES[newPos];
-      this.log.unshift(`${player.name} throws ${entry.label}, lands on ${newPos} — slides down a snake to ${scorer.score}!`);
+      this.log.unshift(`${player.name} throws ${entry.label} (rolls a ${roll}), lands on ${newPos} — slides down a snake to ${scorer.score}!`);
     } else {
-      this.log.unshift(`${player.name} throws ${entry.label} (now on ${newPos})`);
+      this.log.unshift(`${player.name} throws ${entry.label} (rolls a ${roll}, now on ${newPos})`);
     }
     if (scorer.score === SNAKES_AND_LADDERS_BOARD_SIZE) {
       this._declareWinner(scorer, `${player.name} reaches ${SNAKES_AND_LADDERS_BOARD_SIZE} and wins!`);

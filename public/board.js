@@ -40,7 +40,11 @@
     return e;
   }
 
-  function addWedge(svg, path, segment, multiplier, fill) {
+  // `ring` is purely informational (used only by Snakes & Ladders to map the
+  // 6 real dartboard zones to a 1-6 dice-like movement value) - it never
+  // affects scoring in other modes, where inner-single and outer-single are
+  // both just "single" (multiplier 1), same as always.
+  function addWedge(svg, path, segment, multiplier, fill, ring) {
     const p = el('path', { d: path, class: 'wedge', fill, stroke: '#0a0a0a', 'stroke-width': 1 });
     p.dataset.segment = segment;
     p.dataset.multiplier = multiplier;
@@ -48,7 +52,7 @@
       p.classList.add('tapped');
       setTimeout(() => p.classList.remove('tapped'), 120);
       document.dispatchEvent(new CustomEvent('dart-segment', {
-        detail: { segment: segment === 'BULL' ? 'BULL' : Number(segment), multiplier },
+        detail: { segment: segment === 'BULL' ? 'BULL' : Number(segment), multiplier, ring },
       }));
     });
     svg.appendChild(p);
@@ -69,10 +73,10 @@
       const single = dark ? '#0d0d0d' : '#efe6d0';
       const accent = dark ? '#b3282d' : '#1f7a4d';
 
-      addWedge(svg, annularSectorPath(R.outerBull, R.tripleIn, a1, a2), num, 1, single);
-      addWedge(svg, annularSectorPath(R.tripleIn, R.tripleOut, a1, a2), num, 3, accent);
-      addWedge(svg, annularSectorPath(R.tripleOut, R.doubleIn, a1, a2), num, 1, single);
-      addWedge(svg, annularSectorPath(R.doubleIn, R.doubleOut, a1, a2), num, 2, accent);
+      addWedge(svg, annularSectorPath(R.outerBull, R.tripleIn, a1, a2), num, 1, single, 'inner-single');
+      addWedge(svg, annularSectorPath(R.tripleIn, R.tripleOut, a1, a2), num, 3, accent, 'treble');
+      addWedge(svg, annularSectorPath(R.tripleOut, R.doubleIn, a1, a2), num, 1, single, 'outer-single');
+      addWedge(svg, annularSectorPath(R.doubleIn, R.doubleOut, a1, a2), num, 2, accent, 'double');
 
       // number label
       const [lx, ly] = polar(R.label, i * 18);
@@ -85,8 +89,8 @@
     });
 
     // bulls
-    addWedge(svg, `M ${CX - R.outerBull} ${CY} A ${R.outerBull} ${R.outerBull} 0 1 1 ${CX + R.outerBull} ${CY} A ${R.outerBull} ${R.outerBull} 0 1 1 ${CX - R.outerBull} ${CY} Z`, 'BULL', 1, '#1f7a4d');
-    addWedge(svg, `M ${CX - R.bullseye} ${CY} A ${R.bullseye} ${R.bullseye} 0 1 1 ${CX + R.bullseye} ${CY} A ${R.bullseye} ${R.bullseye} 0 1 1 ${CX - R.bullseye} ${CY} Z`, 'BULL', 2, '#b3282d');
+    addWedge(svg, `M ${CX - R.outerBull} ${CY} A ${R.outerBull} ${R.outerBull} 0 1 1 ${CX + R.outerBull} ${CY} A ${R.outerBull} ${R.outerBull} 0 1 1 ${CX - R.outerBull} ${CY} Z`, 'BULL', 1, '#1f7a4d', 'outer-bull');
+    addWedge(svg, `M ${CX - R.bullseye} ${CY} A ${R.bullseye} ${R.bullseye} 0 1 1 ${CX + R.bullseye} ${CY} A ${R.bullseye} ${R.bullseye} 0 1 1 ${CX - R.bullseye} ${CY} Z`, 'BULL', 2, '#b3282d', 'inner-bull');
   }
 
   document.addEventListener('DOMContentLoaded', build);

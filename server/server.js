@@ -100,14 +100,19 @@ app.get('/api/game/:id', (req, res) => {
 // Register a single dart throw.
 // Used by: the on-screen clickable board AND the camera detection script (vision/*.py).
 // body: { segment: 1-20 | "BULL" | "MISS", multiplier: 1|2|3 }
+const VALID_RINGS = new Set(['inner-single', 'outer-single', 'treble', 'double', 'outer-bull', 'inner-bull']);
+
 app.post('/api/game/:id/throw', (req, res) => {
   const game = games.get(req.params.id);
   if (!game) return res.status(404).json({ error: 'not found' });
-  const { segment, multiplier, throwId } = req.body;
+  const { segment, multiplier, throwId, ring } = req.body;
   if (!isValidThrow(segment, multiplier)) {
     return res.status(400).json({ error: 'invalid throw: segment must be 1-20, "BULL", or "MISS"; multiplier must be 1, 2, or 3' });
   }
-  const state = game.throwDart(segment, multiplier, throwId);
+  if (ring !== undefined && !VALID_RINGS.has(ring)) {
+    return res.status(400).json({ error: 'invalid ring' });
+  }
+  const state = game.throwDart(segment, multiplier, throwId, ring);
   broadcast(game.id);
   res.json(state);
 });
