@@ -39,3 +39,19 @@ function Test-ServiceHealthy {
 
 Test-ServiceHealthy -Url "http://localhost:8080" -TaskName "DigiDartsServer" -Label "DigiDarts"
 Test-ServiceHealthy -Url "http://localhost:3180" -TaskName "AutodartsDesktop" -Label "Autodarts Board Manager"
+
+# Claude Desktop is a Windows Store (MSIX) app, not an HTTP service - it has
+# no port to poll, so this checks the process directly instead. Keeping it
+# running is what lets phone/remote sessions connect instead of showing
+# "disconnected" - relaunched via its AppsFolder identity since Store apps
+# can't be started from a raw .exe path.
+function Test-ClaudeDesktopRunning {
+  if (Get-Process -Name "Claude" -ErrorAction SilentlyContinue) { return }
+  Add-Content -Path $logPath -Value "[$(Get-Date)] Claude Desktop not running - relaunching"
+  try {
+    Start-Process "explorer.exe" -ArgumentList "shell:AppsFolder\Claude_pzs8sxrjxfjjc!Claude" -ErrorAction Stop
+  } catch {
+    Add-Content -Path $logPath -Value "[$(Get-Date)] Claude Desktop: relaunch failed: $_"
+  }
+}
+Test-ClaudeDesktopRunning
