@@ -580,7 +580,7 @@
       const col = row % 2 === 0 ? posInRow : 9 - posInRow;
       const shaded = (row + col) % 2 === 0;
       svg += `<rect x="${x - SL_CELL / 2}" y="${y - SL_CELL / 2}" width="${SL_CELL}" height="${SL_CELL}" fill="${shaded ? 'rgba(74,47,28,0.06)' : 'transparent'}" stroke="rgba(74,47,28,0.18)" />`;
-      svg += `<text x="${x - SL_CELL / 2 + 5}" y="${y - SL_CELL / 2 + 15}" font-size="10" fill="rgba(74,47,28,0.55)">${n}</text>`;
+      svg += `<text x="${x - SL_CELL / 2 + 5}" y="${y - SL_CELL / 2 + 15}" font-size="10" fill="rgba(74,47,28,0.75)">${n}</text>`;
     }
 
     Object.entries(boardInfo.ladders).forEach(([bottom, top]) => {
@@ -645,7 +645,11 @@
     const competitors = state.teams && state.teams.length ? state.teams : state.players;
     const width = 560;
     const height = Math.max(160, competitors.length * 52);
-    const marginLeft = 46;
+    // Wide enough that an end-anchored name label (extending LEFTWARD from
+    // this point) can't run past x=0 and get clipped by the SVG's own
+    // boundary - the exact bug that made dartboard numbers unreadable
+    // earlier. 8 chars at font-size 10 bold is well under this margin.
+    const marginLeft = 92;
     const marginRight = 46;
     const trackWidth = width - marginLeft - marginRight;
     const laneH = height / competitors.length;
@@ -663,8 +667,8 @@
       const color = PLAYER_TOKEN_COLORS[idx % PLAYER_TOKEN_COLORS.length];
       svg += `<circle cx="${tx}" cy="${ty}" r="16" fill="${color}" stroke="#fff" stroke-width="2" />`;
       svg += `<text x="${tx}" y="${ty + 6}" font-size="16" text-anchor="middle">🐴</text>`;
-      const nameLabel = escapeHtml((c.name || '?').length > 12 ? `${c.name.slice(0, 11)}…` : (c.name || '?'));
-      svg += `<text x="${marginLeft - 8}" y="${ty + 4}" font-size="11" font-weight="800" text-anchor="end" fill="var(--wood-dark)">${nameLabel}</text>`;
+      const nameLabel = escapeHtml((c.name || '?').length > 8 ? `${c.name.slice(0, 7)}…` : (c.name || '?'));
+      svg += `<text x="${marginLeft - 10}" y="${ty + 4}" font-size="10" font-weight="800" text-anchor="end" fill="#4a2f1c">${nameLabel}</text>`;
     });
 
     const svgEl = document.getElementById('dr-board-svg');
