@@ -14,7 +14,13 @@
     doubleIn: 162 * S,
     doubleOut: 170 * S,
     rim: 190 * S,
-    label: 200 * S,
+    // Was 200*S (=400), sitting exactly on the SVG's own edge (CX/CY=400 in
+    // an 800x800 viewBox) - text glyphs there got clipped by the boundary,
+    // and worse, that radius is outside the cream rim circle (190*S=380)
+    // entirely, so labels sat directly on the page background with no
+    // contrasting backdrop at all. 181*S sits comfortably inside the cream
+    // margin band between the black outer ring and the rim's own edge.
+    label: 181 * S,
   };
 
   function polar(r, angleDeg) {
@@ -81,7 +87,7 @@
       // number label
       const [lx, ly] = polar(R.label, i * 18);
       const t = el('text', {
-        x: lx, y: ly, fill: '#f2ead9', 'font-size': 22, 'font-weight': 800,
+        x: lx, y: ly, fill: '#4a2f1c', 'font-size': 22, 'font-weight': 800,
         'text-anchor': 'middle', 'dominant-baseline': 'middle',
       });
       t.textContent = num;
