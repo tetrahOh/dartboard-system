@@ -12,6 +12,10 @@
   const MAX_PLAYERS = 10;
   const TEAM_COLORS = ['#ff3ea8', '#2fe8ff', '#c6ff5a', '#ff8a3d', '#8b5cf6', '#ffd23f'];
   const AVATARS = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐸', '🐵', '🐔', '🐧', '🦄', '🐙', '🐢'];
+  // Same colors as the player-card rotation (style.css's -fill palette) so a
+  // token/shield/lane marker and that player's scoreboard card read as the
+  // same person at a glance, across every game-specific visualization.
+  const PLAYER_TOKEN_COLORS = ['#c2126f', '#b5490f', '#7645d6', '#158080', '#3d7a1f', '#8f6000'];
 
   let players = [
     { id: 'p1', name: 'Player 1', teamId: null, avatar: AVATARS[0] },
@@ -92,7 +96,10 @@
     } catch (e) { /* unreadable/invalid file - leave the picker open so they can retry */ }
   });
 
-  const LEGS_MODES = new Set(['x01', 'cricket']);
+  const LEGS_MODES = new Set(['x01', 'cricket', 'tower_collapse']);
+  // Tower Collapse reuses X01's rules entirely (see gameEngine.js's
+  // X01_LIKE_TYPES) - it needs the same Finish (double/straight out) options.
+  const X01_LIKE_MODES = new Set(['x01', 'tower_collapse']);
   const LIVES_MODES = new Set(['killer', 'limit']);
 
   // ---------- How-to-play tutorials ----------
@@ -100,7 +107,7 @@
     x01: 'How to play X01', cricket: 'How to play Cricket',
     around_the_clock: 'How to play Around the Clock', killer: 'How to play Killer',
     shanghai: 'How to play Shanghai', halve_it: 'How to play Halve It', limit: 'How to play Limit',
-    snakes_and_ladders: 'How to play Snakes & Ladders',
+    snakes_and_ladders: 'How to play Snakes & Ladders', tower_collapse: 'How to play Tower Collapse',
   };
   const TUTORIALS = {
     x01: [
@@ -150,6 +157,12 @@
       { icon: '🪜', text: 'Land exactly on a ladder and climb straight up' },
       { icon: '🐍', text: 'Land exactly on a snake and slide back down' },
       { icon: '🏁', text: 'Land exactly on 100 to win', bad: 'Overshoot and that dart is wasted' },
+    ],
+    tower_collapse: [
+      { icon: '🏯', text: 'Exactly the same rules as 501' },
+      { icon: '🎯', text: 'Throw 3 darts a turn', example: 'T20 = -60 points' },
+      { icon: '🔢', text: 'Watch your tower shrink toward zero' },
+      { icon: '✅', text: 'Your last dart must be a DOUBLE', example: 'D20 finishes 40', bad: 'Go below 0, or land on 1 — BUST' },
     ],
   };
 
@@ -304,7 +317,7 @@
     el.classList.add('active');
     mode = { type: el.dataset.mode, startScore: el.dataset.score ? Number(el.dataset.score) : undefined };
 
-    const showX01 = mode.type === 'x01';
+    const showX01 = X01_LIKE_MODES.has(mode.type);
     const showLegs = LEGS_MODES.has(mode.type);
     const showLives = LIVES_MODES.has(mode.type);
     document.getElementById('x01-options').classList.toggle('hidden', !showX01);
@@ -508,11 +521,26 @@
     return `<div class="sl-track"><div class="sl-fill" style="width:${pct}%"></div></div>`;
   }
 
+  // Shield fills from the bottom, proportional to remaining/startScore - as
+  // the countdown approaches zero the tower visually shrinks/collapses,
+  // matching the mode's name, while the plain number above still shows the
+  // exact score for anyone who'd rather just read it.
+  function towerCollapseHtml(state, c, idx) {
+    if (state.type !== 'tower_collapse') return '';
+    const pct = Math.max(0, Math.min(1, state.startScore ? c.score / state.startScore : 0));
+    const h = 70;
+    const fillH = Math.round(h * pct);
+    const fillY = h - fillH;
+    const color = PLAYER_TOKEN_COLORS[idx % PLAYER_TOKEN_COLORS.length];
+    const clipId = `tower-clip-${escapeHtml(c.id)}`;
+    return `<svg class="tower-shield" viewBox="0 0 60 ${h}">
+      <defs><clipPath id="${clipId}"><path d="M4 4 L56 4 L56 44 L30 ${h - 2} L4 44 Z" /></clipPath></defs>
+      <path d="M4 4 L56 4 L56 44 L30 ${h - 2} L4 44 Z" fill="rgba(255,255,255,0.18)" stroke="#fff" stroke-width="2" />
+      <rect x="0" y="${fillY}" width="60" height="${fillH}" fill="${color}" clip-path="url(#${clipId})" />
+    </svg>`;
+  }
+
   // ---------- Snakes & Ladders board ----------
-  // Same colors as the player-card rotation (style.css's -fill palette) so a
-  // token on the board and that player's scoreboard card read as the same
-  // person at a glance.
-  const SL_TOKEN_COLORS = ['#c2126f', '#b5490f', '#7645d6', '#158080', '#3d7a1f', '#8f6000'];
   const SL_CELL = 56;
 
   // Classic boustrophedon (back-and-forth) numbering: square 1 is bottom-left,
@@ -587,7 +615,7 @@
         const tx = x + Math.cos(angle) * r;
         const ty = y + Math.sin(angle) * r;
         const initial = escapeHtml((c.name || '?').trim().charAt(0).toUpperCase() || '?');
-        svg += `<circle cx="${tx}" cy="${ty}" r="12" fill="${SL_TOKEN_COLORS[idx % SL_TOKEN_COLORS.length]}" stroke="#fff" stroke-width="2" />`;
+        svg += `<circle cx="${tx}" cy="${ty}" r="12" fill="${PLAYER_TOKEN_COLORS[idx % PLAYER_TOKEN_COLORS.length]}" stroke="#fff" stroke-width="2" />`;
         svg += `<text x="${tx}" y="${ty + 4}" font-size="12" font-weight="800" text-anchor="middle" fill="#fff">${initial}</text>`;
       });
     });
@@ -612,7 +640,7 @@
     board.innerHTML = '';
     const competitors = state.teams && state.teams.length ? state.teams : state.players;
 
-    competitors.forEach((c) => {
+    competitors.forEach((c, idx) => {
       const card = document.createElement('div');
       card.dataset.id = c.id;
       const isTurn = c.id === state.currentCompetitorId && state.status === 'in_progress';
@@ -631,7 +659,8 @@
                          ${legsPips}
                          <div class="badge-row">${livesBadge}${competitorBadges(state, c)}</div>
                          ${state.type === 'cricket' ? cricketMarksHtml(c.marks) : ''}
-                         ${snakesAndLaddersProgressHtml(state, c)}`;
+                         ${snakesAndLaddersProgressHtml(state, c)}
+                         ${towerCollapseHtml(state, c, idx)}`;
       board.appendChild(card);
     });
 

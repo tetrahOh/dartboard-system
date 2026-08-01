@@ -24,7 +24,12 @@ const HALVE_IT_ROUNDS = [
   { label: '20', match: (seg) => seg === 20 },
   { label: 'Bullseye', match: (seg) => seg === 'BULL' },
 ];
-const LEG_BASED_TYPES = new Set(['x01', 'cricket']);
+const LEG_BASED_TYPES = new Set(['x01', 'cricket', 'tower_collapse']);
+// Tower Collapse is X01's exact rules (countdown to exactly 0, bust on
+// overshoot) with a different client-side visual (a shrinking tower/shield
+// instead of a plain number) - reuses _applyX01 and every other X01 code
+// path via this set, rather than duplicating the countdown logic.
+const X01_LIKE_TYPES = new Set(['x01', 'tower_collapse']);
 
 // Snakes and Ladders: not a real-world dart game, invented for this app.
 // Each dart's normal scoreValue (segment*multiplier, so a treble is a big
@@ -157,7 +162,7 @@ class Game {
     return {
       id, name, teamId, isTeam, avatar: avatar || null,
       history: isTeam ? undefined : [],
-      score: this.type === 'x01' ? this.startScore : 0,
+      score: X01_LIKE_TYPES.has(this.type) ? this.startScore : 0,
       legsWon: 0,
       marks: this.type === 'cricket' ? Object.fromEntries(CRICKET_NUMBERS.map((n) => [n, 0])) : undefined,
       lives: (this.type === 'killer' || this.type === 'limit') ? this.livesStart : undefined,
@@ -217,6 +222,7 @@ class Game {
   _dispatch(entry) {
     switch (this.type) {
       case 'x01': return this._applyX01(entry);
+      case 'tower_collapse': return this._applyX01(entry);
       case 'cricket': return this._applyCricket(entry);
       case 'around_the_clock': return this._applyAroundTheClock(entry);
       case 'killer': return this._applyKiller(entry);
@@ -497,7 +503,7 @@ class Game {
     } else {
       this.status = 'leg_won';
       this.competitors.forEach((c) => {
-        c.score = this.type === 'x01' ? this.startScore : 0;
+        c.score = X01_LIKE_TYPES.has(this.type) ? this.startScore : 0;
         if (this.type === 'cricket') c.marks = Object.fromEntries(CRICKET_NUMBERS.map((n) => [n, 0]));
       });
       this.currentPlayerIndex = this.players.findIndex((p) => this.competitorOf(p) === competitor);
@@ -620,7 +626,7 @@ class Game {
       players: this.players.map((p) => this._sanitizeCompetitor(p)),
       teams: this.teams ? this.teams.map((t) => this._sanitizeCompetitor(t)) : null,
       log: this.log.slice(0, 20),
-      checkout: this.type === 'x01' ? this.checkoutSuggestion(this.currentCompetitor.score) : null,
+      checkout: X01_LIKE_TYPES.has(this.type) ? this.checkoutSuggestion(this.currentCompetitor.score) : null,
       snakesAndLaddersBoard: this.type === 'snakes_and_ladders'
         ? { size: SNAKES_AND_LADDERS_BOARD_SIZE, ladders: SNAKES_AND_LADDERS_LADDERS, snakes: SNAKES_AND_LADDERS_SNAKES }
         : null,

@@ -492,6 +492,8 @@ body {
 .player-card .score { font-size: 2rem; font-weight: 900; color: #fff; line-height: 1.2; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.15); }
 .player-card .legs { font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); }
 .player-card .badge-row { display: flex; justify-content: center; gap: 0.3rem; margin-top: 0.3rem; flex-wrap: wrap; }
+.tower-shield { width: 44px; height: auto; margin: 0.4rem auto 0; display: block; }
+
 .sl-track {
   margin-top: 0.4rem;
   height: 8px;
