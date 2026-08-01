@@ -492,6 +492,19 @@ body {
 .player-card .score { font-size: 2rem; font-weight: 900; color: #fff; line-height: 1.2; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.15); }
 .player-card .legs { font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); }
 .player-card .badge-row { display: flex; justify-content: center; gap: 0.3rem; margin-top: 0.3rem; flex-wrap: wrap; }
+.sl-track {
+  margin-top: 0.4rem;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.sl-fill {
+  height: 100%;
+  background: #fff;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
 .badge {
   display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px;
   font-size: 0.68rem; font-weight: 800; border: 1px solid rgba(255, 255, 255, 0.7);

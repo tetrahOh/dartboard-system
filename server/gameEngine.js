@@ -26,6 +26,19 @@ const HALVE_IT_ROUNDS = [
 ];
 const LEG_BASED_TYPES = new Set(['x01', 'cricket']);
 
+// Snakes and Ladders: not a real-world dart game, invented for this app.
+// Each dart's normal scoreValue (segment*multiplier, so a treble is a big
+// jump) moves you along a 1-100 board - reuses the same scoreValue/label
+// machinery every other mode uses, no new throw-handling concept needed.
+// Landing exactly on a ladder's bottom climbs to its top; landing exactly on
+// a snake's head slides to its tail. Must land exactly on 100 to win -
+// overshooting just wastes that dart, same "precision" spirit as X01's
+// double-out. Board layout chosen so no ladder-top/snake-tail is itself
+// another ladder-bottom/snake-head, so a single dart can never chain.
+const SNAKES_AND_LADDERS_BOARD_SIZE = 100;
+const SNAKES_AND_LADDERS_LADDERS = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91 };
+const SNAKES_AND_LADDERS_SNAKES = { 17: 7, 54: 34, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 79 };
+
 function scoreValue(segment, multiplier) {
   if (segment === 'BULL') return multiplier === 2 ? 50 : 25; // inner bull = 2x outer
   if (segment === 'MISS') return 0;
@@ -183,6 +196,7 @@ class Game {
       case 'shanghai': return this._applyShanghai(entry);
       case 'halve_it': return this._applyHalveIt(entry);
       case 'limit': return this._applyLimit(entry);
+      case 'snakes_and_ladders': return this._applySnakesAndLadders(entry);
       default: return undefined;
     }
   }
@@ -349,6 +363,29 @@ class Game {
       scorer.eliminated = true;
       this.log.unshift(`${player.name} is eliminated!`);
       this._checkEliminationWin();
+    }
+  }
+
+  _applySnakesAndLadders(entry) {
+    const player = this.currentPlayer;
+    const scorer = this.currentCompetitor;
+    const newPos = scorer.score + entry.value;
+    if (newPos > SNAKES_AND_LADDERS_BOARD_SIZE) {
+      this.log.unshift(`${player.name} throws ${entry.label} — overshoots ${SNAKES_AND_LADDERS_BOARD_SIZE}, stays on ${scorer.score}`);
+      return;
+    }
+    scorer.score = newPos;
+    if (SNAKES_AND_LADDERS_LADDERS[newPos] !== undefined) {
+      scorer.score = SNAKES_AND_LADDERS_LADDERS[newPos];
+      this.log.unshift(`${player.name} throws ${entry.label}, lands on ${newPos} — climbs a ladder to ${scorer.score}!`);
+    } else if (SNAKES_AND_LADDERS_SNAKES[newPos] !== undefined) {
+      scorer.score = SNAKES_AND_LADDERS_SNAKES[newPos];
+      this.log.unshift(`${player.name} throws ${entry.label}, lands on ${newPos} — slides down a snake to ${scorer.score}!`);
+    } else {
+      this.log.unshift(`${player.name} throws ${entry.label} (now on ${newPos})`);
+    }
+    if (scorer.score === SNAKES_AND_LADDERS_BOARD_SIZE) {
+      this._declareWinner(scorer, `${player.name} reaches ${SNAKES_AND_LADDERS_BOARD_SIZE} and wins!`);
     }
   }
 
@@ -556,6 +593,9 @@ class Game {
       teams: this.teams ? this.teams.map((t) => this._sanitizeCompetitor(t)) : null,
       log: this.log.slice(0, 20),
       checkout: this.type === 'x01' ? this.checkoutSuggestion(this.currentCompetitor.score) : null,
+      snakesAndLaddersBoard: this.type === 'snakes_and_ladders'
+        ? { size: SNAKES_AND_LADDERS_BOARD_SIZE, ladders: SNAKES_AND_LADDERS_LADDERS, snakes: SNAKES_AND_LADDERS_SNAKES }
+        : null,
     };
   }
 }

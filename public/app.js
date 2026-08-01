@@ -100,6 +100,7 @@
     x01: 'How to play X01', cricket: 'How to play Cricket',
     around_the_clock: 'How to play Around the Clock', killer: 'How to play Killer',
     shanghai: 'How to play Shanghai', halve_it: 'How to play Halve It', limit: 'How to play Limit',
+    snakes_and_ladders: 'How to play Snakes & Ladders',
   };
   const TUTORIALS = {
     x01: [
@@ -143,6 +144,12 @@
       { icon: '📉', text: 'Their dart sets the limit', example: 'It can only go LOWER than before' },
       { icon: '❤️', text: 'Everyone else: beat the limit, or lose a life' },
       { icon: '🏆', text: '3 lives each — last one standing wins!' },
+    ],
+    snakes_and_ladders: [
+      { icon: '🎯', text: 'Every dart moves you forward that many squares', example: 'T20 = 60 squares!' },
+      { icon: '🪜', text: 'Land exactly on a ladder and climb straight up' },
+      { icon: '🐍', text: 'Land exactly on a snake and slide back down' },
+      { icon: '🏁', text: 'Land exactly on 100 to win', bad: 'Overshoot and that dart is wasted' },
     ],
   };
 
@@ -491,7 +498,14 @@
   function competitorStat(state, c) {
     if (state.type === 'around_the_clock') return c.target === 'BULL' ? 'B' : c.target;
     if (state.type === 'killer' || state.type === 'limit') return c.lives;
+    if (state.type === 'snakes_and_ladders') return `${c.score}/${state.snakesAndLaddersBoard ? state.snakesAndLaddersBoard.size : 100}`;
     return c.score;
+  }
+
+  function snakesAndLaddersProgressHtml(state, c) {
+    if (state.type !== 'snakes_and_ladders' || !state.snakesAndLaddersBoard) return '';
+    const pct = Math.min(100, (c.score / state.snakesAndLaddersBoard.size) * 100);
+    return `<div class="sl-track"><div class="sl-fill" style="width:${pct}%"></div></div>`;
   }
 
   function competitorBadges(state, c) {
@@ -527,7 +541,8 @@
                          <div class="score">${competitorStat(state, c)}</div>
                          ${legsPips}
                          <div class="badge-row">${livesBadge}${competitorBadges(state, c)}</div>
-                         ${state.type === 'cricket' ? cricketMarksHtml(c.marks) : ''}`;
+                         ${state.type === 'cricket' ? cricketMarksHtml(c.marks) : ''}
+                         ${snakesAndLaddersProgressHtml(state, c)}`;
       board.appendChild(card);
     });
 
@@ -626,6 +641,10 @@
       flashCard(card, 'anim-heartbreak', 500);
     } else if (latest.includes('score halved')) {
       flashCard(card, 'anim-halve', 500);
+    } else if (latest.includes('climbs a ladder')) {
+      flashCard(card, 'anim-win-pulse', 600);
+    } else if (latest.includes('slides down a snake')) {
+      flashCard(card, 'anim-bust', 500);
     } else if (latest.includes('wins') || latest.includes('SHANGHAI') || latest.includes('last one standing')) {
       flashCard(card, 'anim-win-pulse', 1200);
       spawnConfetti();
