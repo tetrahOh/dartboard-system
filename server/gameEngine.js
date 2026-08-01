@@ -67,20 +67,17 @@ function snakesAndLaddersDiceValue(segment, multiplier, ring) {
   return 1;
 }
 
-// Donkey Race: not a real-world dart game, invented for this app. Unlike
-// Snakes & Ladders, movement here scales directly with the multiplier -
-// hitting doubles/trebles genuinely matters for distance, per the actual
-// request this was built from - rather than flattening everything to a
-// 1-6 dice range. Bull is scored at the same tier as the nearest numbered
-// multiplier (outer bull ~ double, inner bull ~ treble) since it's roughly
-// that hard to hit. No "exact landing" requirement, unlike Snakes &
-// Ladders - first to cross the finish line wins, same as a real race.
-const DONKEY_RACE_TRACK_LENGTH = 30;
-function donkeyRaceMove(segment, multiplier) {
-  if (segment === 'MISS') return 0;
-  if (segment === 'BULL') return multiplier === 2 ? 3 : 2;
-  return multiplier;
-}
+// Donkey Race: not a real-world dart game, invented for this app. Each
+// competitor is assigned their own number at random (reuses
+// _assignKillerNumbers, same as Killer) - only hits on YOUR number move
+// you, and the multiplier decides how far: single = 1, double = 2,
+// treble = 3. Hits on anyone else's number (or Bull, or a miss) don't
+// move you at all, same spirit as Killer requiring a hit on your own
+// number before anything happens. No "exact landing" requirement, unlike
+// Snakes & Ladders - first to cross the finish line wins, same as a real
+// race. Track is shorter than Snakes & Ladders' 100 squares since only a
+// fraction of darts thrown will actually land on your own number.
+const DONKEY_RACE_TRACK_LENGTH = 20;
 
 function scoreValue(segment, multiplier) {
   if (segment === 'BULL') return multiplier === 2 ? 50 : 25; // inner bull = 2x outer
@@ -170,7 +167,7 @@ class Game {
     this.teams = teams && teams.length ? teams.map((t) => this._makeCompetitor(t.id, t.name, null, true)) : null;
     this._roundPlayerCount = this.players.length; // no one eliminated yet at construction time
 
-    if (type === 'killer') this._assignKillerNumbers();
+    if (type === 'killer' || type === 'donkey_race') this._assignKillerNumbers();
   }
 
   _makeCompetitor(id, name, teamId, isTeam = false, avatar) {
@@ -442,13 +439,13 @@ class Game {
   _applyDonkeyRace(entry) {
     const player = this.currentPlayer;
     const scorer = this.currentCompetitor;
-    const move = donkeyRaceMove(entry.segment, entry.multiplier);
-    scorer.score = Math.min(DONKEY_RACE_TRACK_LENGTH, scorer.score + move);
-    if (move > 0) {
-      this.log.unshift(`${player.name} throws ${entry.label} — moves ${move} (now at ${scorer.score}/${DONKEY_RACE_TRACK_LENGTH})`);
-    } else {
-      this.log.unshift(`${player.name} throws ${entry.label} (no movement)`);
+    if (entry.segment !== scorer.killerNumber) {
+      this.log.unshift(`${player.name} throws ${entry.label} (not their number — no movement)`);
+      return;
     }
+    const move = entry.multiplier; // single=1, double=2, treble=3
+    scorer.score = Math.min(DONKEY_RACE_TRACK_LENGTH, scorer.score + move);
+    this.log.unshift(`${player.name} hits their number with ${entry.label} — moves ${move} (now at ${scorer.score}/${DONKEY_RACE_TRACK_LENGTH})`);
     if (scorer.score >= DONKEY_RACE_TRACK_LENGTH) {
       this._declareWinner(scorer, `${player.name} crosses the finish line and wins the race!`);
     }

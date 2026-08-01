@@ -589,13 +589,13 @@ body {
 .controls-row button:active { transform: translateY(3px); box-shadow: none; }
 
 .log-panel {
-  margin-top: 1rem;
-  max-height: 140px;
-  overflow-y: auto;
-  font-size: 0.85rem;
-  color: var(--wood-dark);
-  border-top: 2px dashed var(--wood-light);
-  padding-top: 0.5rem;
+  /* Hidden from the player-facing screen - the flavor animations already
+     react to each throw (bust shake, killer flicker, etc.), so a raw
+     scrolling text log of every dart is just clutter on top of that, not
+     something players need to read. Left in the DOM (not removed) since
+     app.js's triggerFlavorAnimations still reads state.log to decide which
+     animation to play - only the visual list itself is turned off. */
+  display: none;
 }
 .log-panel div { padding: 0.15rem 0; }
 

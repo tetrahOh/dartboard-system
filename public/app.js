@@ -166,9 +166,9 @@
       { icon: '✅', text: 'Your last dart must be a DOUBLE', example: 'D20 finishes 40', bad: 'Go below 0, or land on 1 — BUST' },
     ],
     donkey_race: [
-      { icon: '🎯', text: 'Every dart moves your donkey forward', example: 'Single = 1, Double = 2, Treble = 3' },
-      { icon: '🎪', text: 'Bullseye counts too', example: 'Outer bull = 2, inner bull = 3' },
-      { icon: '❌', text: 'Miss and you stay put' },
+      { icon: '🔢', text: 'Everyone gets their own random number' },
+      { icon: '🎯', text: 'Hit YOUR number to move forward', example: 'Single = 1, Double = 2, Treble = 3' },
+      { icon: '❌', text: "Hit anyone else's number (or miss) — no movement" },
       { icon: '🏁', text: 'First past the finish line wins!' },
     ],
   };
@@ -677,6 +677,9 @@
     if (state.type === 'killer') {
       if (c.killerNumber !== undefined) badges.push(`<span class="badge killer">#${c.killerNumber}</span>`);
       if (c.isKiller) badges.push('<span class="badge killer">KILLER</span>');
+    }
+    if (state.type === 'donkey_race' && c.killerNumber !== undefined) {
+      badges.push(`<span class="badge killer">Your number: ${c.killerNumber}</span>`);
     }
     if (state.type === 'around_the_clock') badges.push('<span class="badge target">next</span>');
     return badges.join('');
